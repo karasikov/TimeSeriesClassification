@@ -24,6 +24,7 @@ end
 
 
 % load dataset
+addpath('../data');
 [design_matrix, labels] = load_WISDM;
 % replace NaN values with means
 
@@ -35,7 +36,10 @@ for i = 1 : size(design_matrix, 1)
     design_matrix(i,isnan(design_matrix(i,:))) = mean_features(isnan(design_matrix(i,:)));
 end
 
-test_ind = randsample(1:size(design_matrix, 1), floor(size(design_matrix, 1) / 10));
+design_matrix(:,34:36) = [];
+%design_matrix = Scale(design_matrix);
+
+test_ind = randsample(1:size(design_matrix, 1), floor(0.3 * size(design_matrix, 1)));
 train_ind = 1:size(design_matrix, 1);
 train_ind(test_ind) = [];
 

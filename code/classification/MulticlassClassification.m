@@ -13,7 +13,7 @@ Parameters.columns=18; %ECOC-Random parameter: code length
 Parameters.BCHcodelength=15; %ECOC-BCH parameter: code length
 Parameters.decoding='HD'; %Hamming distance
 Parameters.base_params.iterations=50; %for AdaBoost binary classifier
-Parameters.base_params.settings='-c 8 -g 0.0078'; %for SVM binary classifier
+Parameters.base_params.settings='-c 8 -t 1 -d 3 -r 1'; %for SVM binary classifier
 
 k=1;
 j=2;
