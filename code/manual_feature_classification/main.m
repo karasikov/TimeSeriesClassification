@@ -7,7 +7,7 @@ addpath(genpath(strcat(cur_dir, '/../classification')));
 addpath(genpath(strcat(cur_dir, '/../data_loading')));
 addpath(genpath(strcat(cur_dir, '/../feature_generation')));
 
-[X, y] = ManualFeatureGeneration(load_WIDSM_preprocessed_large());
+[X, y] = ManualFeatureGeneration(load_WISDM_preprocessed_large());
 
 %% Multi-class classification settings
 approaches  = {'OneVsAll', 'OneVsOne', 'ECOCRandom', 'ECOCBCH'}; %One-Vs-All, One-Vs-One, ECOC-Random, ECOC-BCH
