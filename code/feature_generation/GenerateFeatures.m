@@ -10,7 +10,9 @@
 %        multi_features --- set of function hundles for multi-varied time-series
 %          (  single_features = { @(tses)( mean(sqrt(sum(tses.^2, 1))) ), ... }  )
 %
-
+% output: X --- design matrix
+%         y --- class label vector
+%
 function [X, y] = GenerateFeatures(dataset, single_features, multi_features)
 
 %% class labels
