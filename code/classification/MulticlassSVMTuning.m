@@ -8,16 +8,17 @@ test_idx(train_idx) = [];
 
 initialized_settings = Parameters.base_params.settings;
 
-function accuracy = Accuracy(SVM_params)
+function test_accuracy = Accuracy(SVM_params)
     Parameters.base_params.settings = [initialized_settings, ' ', ...
         sprintf(strjoin(strcat('-', SVM_tuning_parameters(:,1), ' %f')'), SVM_params)];
 
-    labels = MulticlassClassificationTest(...
-                X(test_idx,:), ...
-                MulticlassClassificationTrain(X(train_idx,:), y(train_idx), Parameters));
+    classifier = MulticlassClassificationTrain(X(train_idx,:), y(train_idx), Parameters);
+    train_labels = MulticlassClassificationTest(X(train_idx,:), classifier);
+    test_labels = MulticlassClassificationTest(X(test_idx,:), classifier);
 
-    accuracy = sum(labels == y(test_idx)) / length(test_idx);
-    fprintf([Parameters.base_params.settings, ': %f\n'], accuracy);
+    train_accuracy = sum(train_labels == y(train_idx)) / length(train_idx);
+    test_accuracy = sum(test_labels == y(test_idx)) / length(test_idx);
+    fprintf([Parameters.base_params.settings, ': %f/%f\n'], train_accuracy, test_accuracy);
 end
 
 [optimal_params] = ClassifiersTuning(@Accuracy, SVM_tuning_parameters(:,2));
