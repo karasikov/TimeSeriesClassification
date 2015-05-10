@@ -1,31 +1,24 @@
-function [X, y] = ManualFeatureGeneration(dataset)
+% Generate design matrix
+%
+% input: dataset --- [1 x dataset_size] struct array with fields:
+%          ts    --- time series: [num_components x ts_length] double
+%          label --- class label: integer in 1:num_classes
+%
+%        single_features --- set of function hundles for one-component time-series
+%          (  single_features = { @(ts)( mean(ts) ), ... }  )
+%
+%        multi_features --- set of function hundles for multi-varied time-series
+%          (  single_features = { @(tses)( mean(sqrt(sum(tses.^2, 1))) ), ... }  )
+%
+
+function [X, y] = GenerateFeatures(dataset, single_features, multi_features)
 
 %% class labels
 y = [dataset.label]';
 
-%% manual features
-
-% statistical features for one-component ts: [1 x ts_len] double
-single_features = {...
-    @(ts)( BinsCount(ts, 3) ),...
-    @(ts)( mean(ts) ),...
-    @(ts)( std(ts) ),...
-    @(ts)( mean(abs(ts - mean(ts))) ),...
-...
-    @(ts)( CalcEigenvalues(ts, 10) ),...
-    @(ts)( CalcArGarch(ts, 10, 2, 1) ),...
-    % @(ts)( CalcAutoregression(ts, 10) ),...
-};
-
-% tses: [num_components x ts_len] double
-multi_features = {...
-    @(tses)( mean(sqrt(sum(tses.^2, 1))) ),...
-...
-    % @(tses)( CalcAutoregression(sqrt(sum(tses.^2, 1)), 10) ),...
-};
-
 num_components = size(dataset(1).ts, 1);
 
+%% design matrix creating
 for i = 1 : length(dataset)
     feature_ind = 1;
     for j = 1 : length(single_features)

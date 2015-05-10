@@ -1,3 +1,4 @@
+%% add path
 if (length(mfilename()))
     cur_dir = fileparts(which(mfilename()));
 else
@@ -7,39 +8,42 @@ addpath(genpath(strcat(cur_dir, '/../classification')));
 addpath(genpath(strcat(cur_dir, '/../data_loading')));
 addpath(genpath(strcat(cur_dir, '/../feature_generation')));
 
-[X, y] = ManualFeatureGeneration(load_WISDM_preprocessed_large());
+%% feature generation
+% statistical features for one-component ts: [1 x ts_len] double
+single_features = {...
+    @(ts)( mean(ts) ),...
+    @(ts)( std(ts) ),...
+    @(ts)( mean(abs(ts - mean(ts))) ),...
+    @(ts)( BinsCount(ts, 10) ),...
+};
+
+% tses: [num_components x ts_len] double
+multi_features = {...
+    @(tses)( mean(sqrt(sum(tses.^2, 1))) ),...
+};
+
+[X, y] = GenerateFeatures(load_WISDM_preprocessed_large(), ...
+                          single_features, multi_features);
 
 %% Multi-class classification settings
-approaches  = {'OneVsAll', 'OneVsOne', 'ECOCRandom', 'ECOCBCH'}; %One-Vs-All, One-Vs-One, ECOC-Random, ECOC-BCH
-classifiers = {'SVM', 'SVM', 'ADA'};
-tester      = {'SVMtest', 'SVMMtest', 'ADAMtest'};
-decoding    = {'HD', 'LLB', 'ELB', 'ED', 'LAP', 'BDEN', 'AED', 'LLW', 'ELW'};
+Parameters.coding = 'OneVsOne';
+Parameters.decoding = 'HD'; % 'LLB', 'ELB', 'ED', 'LAP', 'BDEN', 'AED', 'LLW', 'ELW'
+Parameters.base = 'SVM';
+Parameters.base_test = 'SVMtest';
 
-clear Parameters;
-Parameters.iterations=1000; %ECOC-Random parameter
-Parameters.columns=18; %ECOC-Random parameter: code length
-Parameters.BCHcodelength=15; %ECOC-BCH parameter: code length
-Parameters.decoding='HD'; %Hamming distance
-Parameters.base_params.iterations=50; %for AdaBoost binary classifier
-Parameters.base_params.settings='-c 8 -t 1 -d 3 -r 1'; %for SVM binary classifier
+Parameters.base_params.settings='-t 2'; % set SVM kernel
+% MulticlassSVMTuning(X, y, Parameters, {'c', 8:0.5:12; 'g', 0.08:0.02:0.16});
 
-k=1;
-j=2;
-
-Parameters.base=classifiers{k};
-Parameters.base_test=tester{k};
-Parameters.decoding=decoding{k};
-Parameters.coding=approaches{j};
+Parameters.base_params.settings='-t 2 -c 8.5 -g 0.12'; %for SVM binary classifier
+%Parameters.base_params.settings='-t 1 -d 3 -r 1 '; %for SVM binary classifier
 
 %% Analyze classification
-addpath('../../../../ErrorAnalysis');
 % Determine learn/test splitting parameters
 NSPLITS = 50;
 LEARN_RATE = 0.7;
 % Launch analyzer
-err_test = AnalyseMultiClassification(X, y, ...
+[~,sens] = AnalyseMultiClassification(X, y, ...
                                       @MulticlassClassificationTrain, Parameters, ...
                                       @MulticlassClassificationTest, ...
                                       LEARN_RATE, NSPLITS);
-
-err_test
+disp(sens');
