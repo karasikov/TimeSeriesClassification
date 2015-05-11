@@ -57,7 +57,7 @@ end
 fprintf('\nDone\n');
 
 sensitivity = diag(classes_distr) ./ sum(classes_distr, 2);
-classes_distr = round(classes_distr / nsplits);
+classes_distr = classes_distr / nsplits;
 
 num_obj = sum(classes_distr, 2);
 mean_test = diag(classes_distr) ./ num_obj;

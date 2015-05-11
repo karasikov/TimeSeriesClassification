@@ -37,7 +37,8 @@ base_test=Parameters.base_test;
 base_test_params=Parameters.base_test_params;
 
 [dataT,dataV]=compute_validation(data,classes,validation);
-Classifiers=Learning(dataT,Parameters,classes,1:size(ECOC,2));
+Parameters.ECOC=[ECOC, classes];
+Classifiers=Learning(dataT,Parameters);
 [result,confusion_t]=Decoding(dataT,classes,ECOC,base,Classifiers,decoding,base_test,base_test_params);
 [result,confusion_v]=Decoding(dataV,classes,ECOC,base,Classifiers,decoding,base_test,base_test_params);
 error_t=(sum(diag(confusion_v))/(sum(sum(confusion_v)))*w_validation+(sum(diag(confusion_t))/sum(sum(confusion_t))))*(1-w_validation);
@@ -46,11 +47,11 @@ error_p=1;
 t=1;
 while (error_t>epsilon & error_t<=error_p & t<=iterations_one)
     [ECOC,c1(t),c2(t)]=find_partition(confusion_v,confusion_t,w_validation,dataT,ECOC,one_mode,show_info,iterations_sffs,steps_sffs,criterion_sffs);
-    Parameters.ECOC=ECOC;
+    Parameters.ECOC=[ECOC, classes];
     if (show_info)
         disp(ECOC);
     end
-    Classifiers(size(ECOC,2))=Learning(dataT,Parameters,classes,size(ECOC,2));
+    Classifiers=Learning(dataT,Parameters);
     [result,confusion_t]=Decoding(dataT,classes,ECOC,base,Classifiers,decoding,base_test,base_test_params);
     [result,confusion_v]=Decoding(dataV,classes,ECOC,base,Classifiers,decoding,base_test,base_test_params);
     error_p=error_t;
