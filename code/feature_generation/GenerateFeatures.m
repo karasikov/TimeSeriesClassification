@@ -10,10 +10,26 @@
 %        multi_features --- set of function hundles for multi-varied time-series
 %          (  multi_features = { @(tses)( mean(sqrt(sum(tses.^2, 1))) ), ... }  )
 %
+%        fragmentation --- function handler for fragmenting time-series
+%          (  fragmentation = @(tses)( {tses(:, 1 : length(tses) / 2),
+%                                       tses(:, length(tses) / 2 : end)} )  ) %bisect
+%
+%        distr_params --- function handler for getting features' distribution
+%                           parameters of time-series' fragments
+%                         This parameters work as final features of initial ts
+%          (  distr_params = @(fragments_features)( mean(fragments_features, 1) )  ) 
+%
 % output: X --- design matrix
 %         y --- class label vector
 %
-function [X, y] = GenerateFeatures(dataset, single_features, multi_features)
+function [X, y] = GenerateFeatures(dataset, single_features, multi_features,...
+                                                fragmentation, distr_params)
+
+%% default distribution functions --- nothing to be done, just use features from ts
+if nargin < 5
+    fragmentation = @(tses)( {tses} );
+    distr_params = @(fragments_params)( mean(fragments_params, 1) );
+end
 
 %% class labels
 y = [dataset.label]';
@@ -22,19 +38,34 @@ num_components = size(dataset(1).ts, 1);
 
 %% design matrix creating
 for i = 1 : length(dataset)
-    feature_ind = 1;
-    for j = 1 : length(single_features)
-        for k = 1 : num_components
-            features = feval(single_features{j}, dataset(i).ts(k,:));
-            X(i, feature_ind : feature_ind + length(features) - 1) = features;
-            feature_ind = feature_ind + length(features);
+    fragments = fragmentation(dataset(i).ts); % { first_fragment,
+                                              %   second_fragment,
+                                              %   ... }
+
+    fragments_features = []; % [ first_fragment_features;
+                             %   second_fragment_features;
+                             %   ... ]
+
+    for f = 1 : length(fragments)
+        fragment = fragments{f};
+        % each multi-varied time-series' fragment produces features 
+        % |fragment_features| --- vector of fixed length
+
+        fragment_features = [];
+
+        for j = 1 : length(single_features)
+            for k = 1 : num_components
+                features = feval(single_features{j}, fragment(k,:));
+                fragment_features = [fragment_features, features(:)'];
+            end
         end
+        for j = 1 : length(multi_features)
+            features = feval(multi_features{j}, fragment);
+            fragment_features = [fragment_features, features(:)'];
+        end
+        fragments_features(f,:) = fragment_features;
     end
-    for j = 1 : length(multi_features)
-        features = feval(multi_features{j}, dataset(i).ts);
-        X(i, feature_ind : feature_ind + length(features) - 1) = features;
-        feature_ind = feature_ind + length(features);
-    end
+    X(i,:) = distr_params(fragments_features);
 end
 
 end
