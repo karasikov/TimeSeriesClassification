@@ -21,6 +21,10 @@ function [ classes_distr, sensitivity ] = AnalyseMultiClassification( X, y, lear
 % sensitivity   - K-by-1 vector of TPR for each class
 
 
+if ~isfield(par_learn, 'observation_fragments_indexes')
+    par_learn.observation_fragments_indexes = num2cell(1:length(y));
+end
+
 classes = unique(y);
 learn_size = round(learn_rate * length(y));
 classes_distr = zeros(length(classes));
@@ -31,18 +35,34 @@ for split_idx = 1 : nsplits
     fprintf('%d..', split_idx);
     %% Sample learn-test splitting
     perm_idx = randperm(length(y));
+
     learn_idx = perm_idx(1 : learn_size);
+    learn_fragments_idx = { par_learn.observation_fragments_indexes{learn_idx} };
     test_idx = perm_idx(learn_size + 1 : length(y));
-    X_learn = X(learn_idx, :);
-    y_learn = y(learn_idx);
-    X_test = X(test_idx, :);
+    test_fragments_idx = { par_learn.observation_fragments_indexes{test_idx} };
+
+    X_learn = X([learn_fragments_idx{:}], :);
+    y_learn = [];
+    for idx = learn_idx
+        y_learn = [y_learn;...
+            y(idx) * ones(length(par_learn.observation_fragments_indexes{idx}), 1)];
+    end
+    X_test = X([test_fragments_idx{:}], :);
+    X_test_idx = [];
+    for i = 1 : length(test_fragments_idx)
+        X_test_idx = [X_test_idx, i * ones(1, length(test_fragments_idx{i}))];
+    end
     y_test = y(test_idx);
 
     %% Learn classifier
     par = feval(learn_fun, X_learn, y_learn, par_learn);
 
     %% Classify samples
-    y_est_test = feval(test_fun, X_test, par);
+    y_fragments_est_test = feval(test_fun, X_test, par);
+    y_est_test = [];
+    for i = 1 : length(test_idx) % for each testing observation
+        y_est_test(i) = mode(y_fragments_est_test(X_test_idx == i));
+    end
 
     %% Errors
     for cl1 = 1 : length(classes)
