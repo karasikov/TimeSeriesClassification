@@ -31,7 +31,7 @@ multi_features = {...
 [X, y] = GenerateFeatures(load_WISDM_preprocessed_large(), ...
                           single_features, multi_features);
 
-X(:,1:78) = Scale(X(:,1:78));
+X = ScaleCell(X);
 
 %% Multi-class classification settings
 approaches  = {'OneVsAll', 'OneVsOne', 'ECOCRandom', 'ECOCBCH'}; %One-Vs-All, One-Vs-One, ECOC-Random, ECOC-BCH

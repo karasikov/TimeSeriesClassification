@@ -27,7 +27,7 @@ Parameters = [];
 
 dataset = load_WISDM_preprocessed_large();
 
-segm_size = 100 : 100 : 500;
+segm_size = 20 : 20 : 100;
 mean_accuracy = zeros(size(segm_size));
 
 for segm_size_idx = 1 : length(segm_size)
@@ -50,7 +50,7 @@ for segm_size_idx = 1 : length(segm_size)
 
     %% Analyze classification
     % Determine learn/test splitting parameters
-    NSPLITS = 5;
+    NSPLITS = 10;
     LEARN_RATE = 0.7;
     % Launch analyzer
     [~,sens] = AnalyseMulticlassClassification(X, y, ...
