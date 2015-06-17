@@ -1,3 +1,5 @@
+function [X, y] = GenerateFeatures(dataset, single_features, multi_features,...
+                                                fragmentation, distr_params)
 % Generate design matrix
 %
 % input: dataset --- [1 x dataset_size] struct array with fields:
@@ -19,13 +21,13 @@
 %                         This parameters work as final features of initial ts
 %          (  distr_params = @(fragments_features)( mean(fragments_features, 1) )  ) 
 %
-% output: X --- design matrix
-%         y --- class label vector
+% output: X --- (dataset_size x 1) cell of (p x n) matrices, p --- number of observations per object,
+%                                                            n --- number of features per observation
+%         y --- vector of class labels
 %
-function [X, y] = GenerateFeatures(dataset, single_features, multi_features,...
-                                                fragmentation, distr_params)
 
 %% default distribution functions --- nothing to be done, just use features from ts
+
 if nargin < 5
     fragmentation = @(tses)( {tses} );
     distr_params = @(fragments_params)( mean(fragments_params, 1) );
@@ -65,7 +67,7 @@ for i = 1 : length(dataset)
         end
         fragments_features(f,:) = fragment_features;
     end
-    X(i,:) = distr_params(fragments_features);
+    X{i,1} = distr_params(fragments_features);
 end
 
 end

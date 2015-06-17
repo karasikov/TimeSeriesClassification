@@ -41,11 +41,11 @@ Parameters.base_params.settings='-t 2 -c 45 -g 0.0025'; %for SVM binary classifi
 
 %% Analyze classification
 % Determine learn/test splitting parameters
-NSPLITS = 200;
+NSPLITS = 100;
 LEARN_RATE = 0.7;
 % Launch analyzer
-[confusion,sens] = AnalyseMultiClassification(X, y, ...
+[confusion,sens] = AnalyseMulticlassClassification(X, y, ...
                                       @MulticlassClassificationTrain, Parameters, ...
                                       @MulticlassClassificationTest, ...
                                       LEARN_RATE, NSPLITS);
-disp(confusion);
+disp(sens');

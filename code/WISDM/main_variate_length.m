@@ -7,6 +7,7 @@ end
 addpath(genpath(strcat(cur_dir, '/../classification')));
 addpath(genpath(strcat(cur_dir, '/../data_loading')));
 addpath(genpath(strcat(cur_dir, '/../feature_generation')));
+addpath(genpath(strcat(cur_dir, '/../segmentation')));
 
 %% feature generation
 % statistical features for one-component ts: [1 x ts_len] double
@@ -24,34 +25,16 @@ multi_features = {...
 
 Parameters = [];
 
-dataset_ = load_WISDM_preprocessed_large();
+dataset = load_WISDM_preprocessed_large();
 
-[X,y] = GenerateFeatures(dataset_, single_features, multi_features);
+segm_size = 100 : 100 : 500;
+mean_accuracy = zeros(size(segm_size));
 
-num_segments = 1:5;
-mean_accuracy = zeros(size(num_segments));
+for segm_size_idx = 1 : length(segm_size)
 
-for num_segments_idx = 1 : length(num_segments)
-
-    NUM_SEGMENTS = num_segments(num_segments_idx);
-
-    Parameters.observation_fragments_indexes = [];
-    dataset = struct();
-    for i = 1 : length(dataset_)
-        ts = dataset_(i).ts;
-        label = dataset_(i).label;
-        Parameters.observation_fragments_indexes{i} = ...
-            [(i - 1) * NUM_SEGMENTS + 1 : i * NUM_SEGMENTS];
-
-        for j = 1 : NUM_SEGMENTS
-            segment_length = floor(length(ts) / NUM_SEGMENTS);
-            dataset((i - 1) * NUM_SEGMENTS + j).ts = ...
-                ts(:,(j-1) * segment_length + 1 : j * segment_length);
-            dataset((i - 1) * NUM_SEGMENTS + j).label = label;
-        end
-    end
-
-    [X,~] = GenerateFeatures(dataset, single_features, multi_features);
+    [X,y] = GenerateFeatures(dataset, single_features, multi_features, ...
+                                @(tses)( partition(tses, segm_size(segm_size_idx)) ), ...
+                                @(fragments_features)( fragments_features ));
 
     %% Multi-class classification settings
     Parameters.coding = 'OneVsOne';
@@ -70,12 +53,12 @@ for num_segments_idx = 1 : length(num_segments)
     NSPLITS = 5;
     LEARN_RATE = 0.7;
     % Launch analyzer
-    [~,sens] = AnalyseMultiClassification(X, y, ...
+    [~,sens] = AnalyseMulticlassClassification(X, y, ...
                                           @MulticlassClassificationTrain, Parameters, ...
                                           @MulticlassClassificationTest, ...
                                           LEARN_RATE, NSPLITS);
     disp(sens');
 
-    mean_accuracy(num_segments_idx) = mean(sens);
+    mean_accuracy(segm_size_idx) = mean(sens);
 
 end
