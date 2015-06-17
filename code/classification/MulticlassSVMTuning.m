@@ -2,6 +2,10 @@ function optimal_params = MulticlassSVMTuning(X, y, Parameters, SVM_tuning_param
 
 TRAIN_RATE = 0.7;
 
+if iscell(X)
+    [X, y, ~] = CellToMatrixDesign(X, y);
+end
+
 test_idx = 1 : size(X, 1);
 train_idx = randsample(test_idx, round(TRAIN_RATE * size(X, 1)));
 test_idx(train_idx) = [];

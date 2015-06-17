@@ -37,8 +37,8 @@ for split_idx = 1 : nsplits
     train_idx = perm_idx(1 : train_size);
     test_idx = perm_idx(train_size + 1 : length(y));
 
-    [X_train, y_train, ~] = Reshape(X(train_idx), y(train_idx));
-    [X_test, ~, observation_indexes] = Reshape(X(test_idx), y(test_idx));
+    [X_train, y_train, ~] = CellToMatrixDesign(X(train_idx), y(train_idx));
+    [X_test, ~, observation_indexes] = CellToMatrixDesign(X(test_idx), y(test_idx));
     y_test = y(test_idx);
 
     %% Train classifier
@@ -78,20 +78,5 @@ xlabel('Class labels', 'FontSize', 20, 'FontName', 'Times', 'Interpreter','latex
 ylabel('Objects number', 'FontSize', 20, 'FontName', 'Times', 'Interpreter','latex');
 set(gca, 'FontSize', 20, 'FontName', 'Times')
 title(['Mean test quality=',num2str(sum(diag(classes_distr)) / sum(num_obj))])
-
-end
-
-
-function [X_out, y_out, observation_indexes] = Reshape(X, y)
-
-X_out = cell2mat(X);
-
-y_out = [];
-observation_indexes = [];
-for i = 1 : length(X)
-    num_observations = size(X{i}, 1);
-    y_out = [y_out; repmat(y(i), num_observations, 1)];
-    observation_indexes = [observation_indexes; repmat(i, num_observations, 1)];
-end
 
 end
