@@ -1,0 +1,352 @@
+\documentclass[unicode,lefteqn]{beamer}
+\usepackage{presentation}
+% \usepackage{etex}
+% \usepackage{multicol}
+\usepackage{bm}
+
+\title[Классификация временных рядов]
+    {Классификация временных рядов в пространстве параметров порождающих моделей}
+\author[Карасиков Михаил]
+    {\large Карасиков Михаил}
+    \institute[МФТИ]{\large
+    Московский физико-технический институт\\
+    Факультет управления и прикладной математики\\
+    Кафедра интеллектуальных систем\\
+    \vspace{0.3cm}\\
+    Научный руководитель: д.ф.-м.н. В.\,В.\,Cтрижов}
+
+\date{\footnotesize{Москва, 2015\,г.}}
+
+\begin{document}
+
+\begin{frame}
+  \thispagestyle{empty}
+  \titlepage
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}{Описание исследования}
+\begin{block}{Исследуется}
+Задача признаковой классификации временных рядов:
+\begin{enumerate}
+  \item \textbf{построение пространства признаков},
+  \item решение задачи классификации векторов признаков.
+\end{enumerate}
+\end{block}
+
+\medskip
+\textbf{Цели исследования:}
+\begin{itemize}
+  \item обобщение стандартных методов классификации временных рядов,
+  \item построение алгоритма классификации, использующего в качестве признаков временных рядов параметры моделей временных рядов и их распределения,
+  \item повышение качества решений прикладных задач.
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}{Приложение}
+В качестве приложения рассматривается задача классификации физической активности по данным с акселерометра.
+\begin{block}{Особенности}
+\begin{itemize}
+  \item Классификация физической активности людей с разными физическими характеристиками
+  \item Форма временного ряда существенно зависит от характеристик человека
+  \item Во временных рядах допускаются аномалии
+\end{itemize}
+\end{block}
+
+\begin{block}{Предположение}
+Форма временного ряда сохраняются для конкретного человека и типа физической активности
+\end{block}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}{Исследуемый метод построения пространства признаков}
+\begin{block}{Предположение}
+Временной ряд~--- набор фрагментов, описывающихся некоторой случайной параметрической моделью.
+\end{block}
+
+\medskip
+Задача построения пространства признаков разбивается на $3$ подзадачи:
+\begin{enumerate}
+  \item разбиение временного ряда на фрагменты,
+  \item извлечение признаков из каждого фрагмента,
+  \item оценка параметров распределения признаков фрагментов.
+\end{enumerate}
+Полученные параметры распределений служат признаками при классификации.
+
+\medskip
+Изложенный метод сравнивается с методом голосования,
+где шаг \boxednumber{3} пропускается, а классификация происходит голосованием для фрагментов.
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%
+
+% \begin{frame}{Иллюстрация проблемы}
+% Датасет USC-HAD содержит показания акселерометра для 12 видов человеческой активности:
+% \begin{multicols}{2}
+% \begin{enumerate}
+  % \item walk forward
+  % \item walk left
+  % \item walk right
+  % \item go upstairs
+  % \item go downstairs
+  % \item run forward
+  % \item jump up and down
+  % \item sit and fidget
+  % \item stand
+  % \item sleep
+  % \item elevator up
+  % \item elevator down
+% \end{enumerate}
+% \end{multicols}
+
+% Выборка содержит примерно по $70$ шести"=компонентных временных ряда для каждого класса, а средняя длина временного ряда порядка~$3300$.
+
+% \textbf{Задача:} многоклассовая классификация.
+
+% \end{frame}
+
+%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}{Литература}
+\begin{itemize}
+  \item Human activity recognition using smart phone embedded sensors: A linear dynamical systems method / W.\;Wang, H.\;Liu, L.\;Yu, F.\;Sun // Neural Networks (IJCNN), 2014 International Joint Conference on.— 2014.—July.— Pp. 1185–1190.
+  \item Kwapisz,\;J.\;R. Activity recognition using cell phone accelerometers / J.\;R.\;Kwapisz, G.\;M.\;Weiss, S.\;A.\;Moore // SIGKDD Explor. Newsl.— 2011.—March.— Vol. 12, no. 2.— Pp. 74–82. http:
+//doi.acm.org/10.1145/1964897.1964918.
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}{Постановка задачи классификации}
+\textbf{Дано:}
+$X^\ell=\{x_1,\dots,x_\ell\}\subset X$~--- временные ряды,\\
+\hspace*{35pt}$Y$~--- множество меток классов,\\
+\hspace*{35pt}$\mathfrak{D}\subset X^\ell\times Y$~--- обучающая выборка.
+
+\bigskip
+\textbf{Предполагается} существование целевой зависимости~$y: X\to Y$~--- отображения, значения которого известны только на~объектах обучающей выборки~$\mathfrak{D}$.
+
+\bigskip
+\textbf{Требуется} построить алгоритм классификации~$a: X\to Y$, приближающий целевую функцию~$y$ на~множестве~$X$.
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}{Модель временного ряда}
+Временной ряд описывается моделями вида $g:\;\mathbb{R}^n\times X\rightarrow X$.\\
+\begin{block}{Примеры.}
+\begin{itemize}
+  \item Линейная регрессионная модель
+  \item Авторегрессионная модель (AR)
+  \item Модель скользящего среднего (MA)
+  \item Фурье"=модель
+  \item Вейвлет"=модель
+\end{itemize}
+\end{block}
+
+\medskip
+Параметры настроенной модели определяются по формуле
+\[
+\bm{f}(x) =
+\argmin_{\bm{f}\in \mathbb{R}^d} \rho\left(g(\bm{f},x), x\right).
+\]
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}{Сведение задачи многоклассовой классификации к бинарным}
+\begin{itemize}
+  \item One"~vs"~All approach:
+  \[
+  a(x)=\argmax_{i=1,\dots ,N} f_i(x),\quad
+  f_i(x) = \begin{cases}
+    \geq 0, & \text{если } y(x) = i,\\
+       < 0, & \text{если } y(x)\neq i.
+  \end{cases}
+  \]
+  \item One"~vs"~One approach:
+  \[
+  a(x) = \argmax_{i=1,\dots ,N} \sum_{\substack{j=1,\dots ,N\\ j\neq i}} f_{ij}(x),\quad
+  f_{ij}(x) = \begin{cases}
+    +1, & \text{если } y(x)=i,\\
+    -1, & \text{если } y(x)=j.
+  \end{cases}
+  \]
+  \item Error"=Correcting Output Codes approach:
+  \[
+  a(x) = \argmin_{i=1,\dots,N} \sum_{j=1}^F L(M^i_j f_j(x)),
+  \]
+  где~$M\in \left\{-1,0,+1\right\}^{N{\times}F}$~--- матрица, строки которой состоят из~кодов меток классов~$Y$, а $L$~--- функция потерь.
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}{Бинарная классификация}
+Пусть $\mathbf{f}(x)\in\mathbb{R}^n$~--- признаковое описание временного ряда $x$.
+
+\medskip
+Тогда для решения задачи бинарной классификации временных рядов необходимо задать метод обучения~$\mu:\;\mathfrak{D}\mapsto a$.
+
+\medskip
+Например, для SVM с линейным ядром
+\[
+a(x; \bm w) = \sign(\bm{w}^{\mathsf{T}}\mathbf{f}(x) - w_0),
+\]
+где $\bm w$ и $w_0$~--- решения оптимизационной задачи
+\[
+\frac{1}{2C} \|\bm w\|^2 + \sum_{(x,y)\in\mathfrak{D}}\left(1-y(\bm{w}^\mathsf{T}\mathbf{f}(x) - w_0)\right)_+ \to \min_{\bm w\in\mathbb{R}^n,\;w_0\in\mathbb{R}}.
+\]
+% Эксперименты показали достаточную эффективность классификаторов
+% \begin{itemize}
+  % \item Машина опорных векторов (SVM)
+  % \item Регуляризованная логистическая регрессия (RLR)
+% \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}{Алгоритм классификации временных рядов в пространстве параметров порождающих моделей}
+Итак, задание модели~$g$, кодовой матрицы~$M$, функции потерь~$L$ и метода обучения бинарного классификатора~$\mu$ дает алгоритм классификации временных рядов
+\[
+a(x) = a(x;g,M,L,\mu).
+\]
+
+\bigskip
+Выбор~$g$, $M$, $L$ и $\mu$ производится по скользящему контролю.
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}{Разбиение временного ряда на фрагменты}
+\begin{block}{Определения}
+\begin{itemize}
+  \item Временной ряд:~$x=[x^{(1)},\dots,x^{(t)}]\in X$.
+  \item Фрагмент временного ряда~$x$:~$s=[x^{(i_1)},\dots,x^{(i_k)}],$
+  \hspace*{5cm}где $1\leq i_1\leq\dots\leq i_k\leq t$.
+\end{itemize}
+%\textbf{Замечание:} фрагмент~--- тоже временной ряд.
+\end{block}
+
+Пусть $\mathbf{S}(x)$~--- множество фрагментов временного ряда~$x$.
+
+Тогда алгоритм фрагментации есть отображение~$S: x\mapsto \mathbf{S}(x)$.
+
+\medskip
+\textbf{Примеры:}
+\begin{itemize}
+  \item тождественное отображение \[S:\;x\mapsto \{x\},\]
+  \item сегментация \[S:\;x\mapsto \{s^{(1)},\dots,s^{(p)}\},\]
+  где $x=(s^{(1)}, \dots, s^{(p)})$.
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}{Параметры моделей фрагментов}
+\textbf{Замечание:} каждый фрагмент есть временной ряд.
+
+\medskip
+После настройки модели~$g(\bm{f},x)$ на каждом фрагменте из~$S(x)$ получим набор параметров модели:
+\[
+F(x;S,g)=\left\{\bm{f}(s):\;s\in S(x)\right\}.
+\]
+
+\medskip
+Далее предлагаются две схемы решения исходной задачи.
+\begin{itemize}
+  \item Принцип голосования: обучение алгоритма $b$ на объектах обучающей выборки~$\hat{\mathfrak{D}}=\left\{(\bm{f}(s),y):\;(x,y)\in\mathfrak{D},\,s\in S(x)\right\}$
+  и последующая классификация
+  \[
+  a(x)=\text{mode}\left\{b(\bm{f}(s)):\;s\in S(x)\right\}.
+  \]
+  \item Классификация в пространстве параметров распределений параметров моделей.
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}{Классификация в пространстве параметров распределений параметров порождающих моделей}
+\begin{block}{Гипотеза порождения временного ряда}
+Фрагменты временного ряда~$s\in S(x)$ описываются моделью~$g(\bm f, s)$ со случайными параметрами~$\bm{f}$ из параметрического семейства распределений~$\left\{\mathsf{P}_{\bm{\theta}}\right\}_{\bm{\theta}\in\Theta}$.
+\end{block}
+
+\medskip
+\textbf{Предлагается} в качестве признакового описания временного ряда использовать оцененный вектор параметров распределения
+\[
+\mathbf{f}(x)=\argmax_{\bm{\theta}\in\Theta}\mathsf{p}\left(F(x;S,g)|\bm{\theta}\right).
+\]
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%
+
+% \begin{frame}{}
+% \algorithmicrequire{$\ \mathfrak{D},\,g,\,\mu$.}
+
+% \algorithmicensure{$\ a$.}
+% \BEGIN
+  % \STATE{$d(s):=0$}
+  % \FORALL{$v \in V\backslash\{s\}$}
+    % \STATE{$d(v):=\infty$}\\
+    % \STATE{$pred(v):=\text{NULL}$}
+  % \ENDFOR
+
+  % \FOR{$i:=1$ to $|V|-1$}
+    % \FORALL{$(u,v)\in E$}
+      % \IF{$d(u) + w_{(u,v)} < d(v)$}
+        % \STATE{$d(v):=d(u) + w_{(u,v)}$}
+        % \STATE{$pred(v):=u$}
+      % \ENDIF
+    % \ENDFOR
+  % \ENDFOR
+% \END
+% \end{frame}
+
+%%%%%%%%%%%%%%%%%%%%
+
+
+% \begin{frame}{Задача классификации временных рядов}
+% \textbf{Задано} некоторое семейство алгоритмов классификации
+% \[
+% A=\{a:\;\mathbb{R}^k\rightarrow Y\}
+% \]
+% и функция потерь
+% \[
+% \mathscr{L}:\;X\times Y\rightarrow \mathbb{R}.
+% \]
+
+% \bigskip
+% \textbf{Найти} алгоритм классификации~$a^*\in A,$ доставляющий минимум функционалу качества~$Q(a, \mathfrak{D})\in \mathbb{R},\quad a\in A:$
+% \begin{align*}
+% a^*
+% & = \argmin_{a\in A}Q(a,\mathfrak{D})=\\
+% & = \argmin_{a\in A}\frac{1}{|\mathfrak{D}|}\sum\limits_{(x_i,y_i)\in\mathfrak{D}}      \mathscr{L}\left(a\left(\mathbf{f}_i\right),y_i\right).
+% \end{align*}
+% \end{frame}
+
+%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}{Вычислительный эксперимент}
+\end{frame}
+\begin{frame}{Цели эксперимента}
+\end{frame}
+\begin{frame}{Результаты эксперимента}
+\end{frame}
+\begin{frame}{Заключение}
+\end{frame}
+\begin{frame}{Результаты, выносимые на защиту}
+\begin{itemize}
+  \item Предложен алгоритмы построения пространства признаков
+  \smallskip
+  \item Предложен алгоритм классификации временных рядов
+  \medskip
+  \item Выполнена программная реализация и проведены численные эксперименты, показавшие повышения качества решения задачи классификации
+\end{itemize}
+\end{frame}
+
+\end{document}
