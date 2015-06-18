@@ -56,10 +56,10 @@ Parameters.decoding=decoding{k};
 Parameters.coding=approaches{j};
 
 Parameters.base_params.settings='-t 2'; % set SVM kernel
-% MulticlassSVMTuning(X, y, Parameters, {'c', 1:5:11; 'g', 0.005:0.05:0.95});
+% MulticlassSVMTuning(X, y, Parameters, {'c', 3:2:7; 'g', 0.15:0.01:0.25});
 
 Parameters.base_params.settings='-t 0 -c 10'; %for SVM binary classifier
-Parameters.base_params.settings='-t 2 -c 28 -g 0.05'; %for SVM binary classifier
+Parameters.base_params.settings='-t 2 -c 6 -g 0.21'; %for SVM binary classifier
 % Parameters.coding=approaches{2};
 % Parameters.base_params.settings='-t 2 -c 6 -g 0.09'; %for SVM binary classifier
 
