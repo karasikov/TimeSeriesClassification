@@ -1,7 +1,7 @@
 \documentclass[unicode,lefteqn]{beamer}
 \usepackage{presentation}
 % \usepackage{etex}
-% \usepackage{multicol}
+\usepackage{multicol}
 \usepackage{bm}
 
 \title[Классификация временных рядов]
@@ -12,17 +12,16 @@
     Московский физико-технический институт\\
     Факультет управления и прикладной математики\\
     Кафедра интеллектуальных систем\\
-    \vspace{0.3cm}\\
+    \vspace{0.3cm}
     Научный руководитель: д.ф.-м.н. В.\,В.\,Cтрижов}
 
 \date{\footnotesize{Москва, 2015\,г.}}
 
 \begin{document}
 
-\begin{frame}
+\begin{titlepage}
   \thispagestyle{empty}
-  \titlepage
-\end{frame}
+\end{titlepage}
 
 %%%%%%%%%%%%%%%%%%%%
 
@@ -186,7 +185,7 @@ W(x;S,g)=\left\{\mathbf{w}_g(s):\;s\in S(x)\right\}.
 
 \textbf{Предлагается} в качестве признакового описания временного ряда использовать оценку вектора параметров распределения:
 \[
-\mathbf{f}(x;S,g,\Theta)=\argmax_{\bm{\theta}\in\Theta}\mathsf{p}\left(W(x;S,g)|\bm{\theta}\right).
+\mathbf{f}(x;S,g,\Theta)=\argmax_{\bm{\theta}\in\Theta}\mathcal{L}\left(\bm{\theta}|W(x;S,g)\right).
 \]
 Тогда получим алгоритм классификации временных рядов:
 \[
@@ -248,6 +247,30 @@ f(x; \bm w) = \sign(\bm{w}^{\mathsf{T}}\mathbf{f}(x) - w_0),
 
 %%%%%%%%%%%%%%%%%%%%
 
+% \begin{frame}{}
+% \algorithmicrequire{$\ \mathfrak{D},\,g,\,\mu$.}
+
+% \algorithmicensure{$\ a$.}
+% \BEGIN
+  % \STATE{$d(s):=0$}
+  % \FORALL{$v \in V\backslash\{s\}$}
+    % \STATE{$d(v):=\infty$}\\
+    % \STATE{$pred(v):=\text{NULL}$}
+  % \ENDFOR
+
+  % \FOR{$i:=1$ to $|V|-1$}
+    % \FORALL{$(u,v)\in E$}
+      % \IF{$d(u) + w_{(u,v)} < d(v)$}
+        % \STATE{$d(v):=d(u) + w_{(u,v)}$}
+        % \STATE{$pred(v):=u$}
+      % \ENDIF
+    % \ENDFOR
+  % \ENDFOR
+% \END
+% \end{frame}
+
+%%%%%%%%%%%%%%%%%%%%
+
 % \begin{frame}{Иллюстрация проблемы}
 % Датасет USC-HAD содержит показания акселерометра для 12 видов человеческой активности:
 % \begin{multicols}{2}
@@ -304,34 +327,75 @@ f(x; \bm w) = \sign(\bm{w}^{\mathsf{T}}\mathbf{f}(x) - w_0),
 \end{enumerate}
 \end{frame}
 
+%%%%%%%%%%%%%%%%%%%%
 
-% \begin{frame}{}
-% \algorithmicrequire{$\ \mathfrak{D},\,g,\,\mu$.}
-
-% \algorithmicensure{$\ a$.}
-% \BEGIN
-  % \STATE{$d(s):=0$}
-  % \FORALL{$v \in V\backslash\{s\}$}
-    % \STATE{$d(v):=\infty$}\\
-    % \STATE{$pred(v):=\text{NULL}$}
-  % \ENDFOR
-
-  % \FOR{$i:=1$ to $|V|-1$}
-    % \FORALL{$(u,v)\in E$}
-      % \IF{$d(u) + w_{(u,v)} < d(v)$}
-        % \STATE{$d(v):=d(u) + w_{(u,v)}$}
-        % \STATE{$pred(v):=u$}
-      % \ENDIF
-    % \ENDFOR
-  % \ENDFOR
-% \END
-% \end{frame}
+\begin{frame}{Dataset WISDM}
+Временной ряд из трех компонент: $\mathbf{x} = [x_t^k]^{k=1,2,3}.$
+\begin{block}{Признаки (по 31 на каждый временной ряд)}
+\begin{enumerate}
+  \item $7$ коэффициентов авторегрессии~$AR(6):$
+  \[
+  \argmin_{w_0,\dots,w_6}\sum_{t}\left(x_t^k - w_0 - \sum_{i=1}^{6} w_i x^{k}_{t-i}\right)^2.
+  \]
+  \item Статистики:
+  \begin{multicols}{2}
+  \begin{itemize}
+    \item $\bar{x}^k=\frac{1}{T}\sum_{t}x_t^k,$
+    \item $\frac{1}{T}\sum_{t}|x_t^k - \bar{x}^k|,$
+    \item $\sqrt{\frac{1}{T-1}\sum_{t}(x_t^k -\bar{x}^k)^2},$
+    \item $\frac{1}{T}\sum_{t}\|\mathbf{x}_t\|.$
+  \end{itemize}
+  \end{multicols}
+\end{enumerate}
+\end{block}
+Без фрагментации, классификатор RBF SVM ($\gamma=0.8$, $C=4$), подход One-vs-All, $50$ случайных разбиений в отношении $7$ к $3$.
+\end{frame}
 
 %%%%%%%%%%%%%%%%%%%%
 
-
-\begin{frame}{Результаты эксперимента}
+\begin{frame}{Dataset WISDM: результаты}
+\begin{minipage}{0.7\textwidth}
+\includegraphics[width=\linewidth]{{../pics/Accuracy_Dataset_WISDM_nSplits_50_rate_0.7_approach_OneVsAll_decoding_LLB_classifier_SVM}.eps}
+\end{minipage}
+\begin{minipage}{0.25\textwidth}
+\textbf{Class labels:}
+\begin{enumerate}
+  \item Jogging
+  \item Walking
+  \item Upstairs
+  \item Downstairs
+  \item Sitting
+  \item Standing
+\end{enumerate}
+\end{minipage}
 \end{frame}
+
+%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}{Dataset USC-HAD}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}{Dataset USC-HAD: сегментация}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}{Dataset USC-HAD: голосование}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}{Dataset USC-HAD: распределения}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%
+
 \begin{frame}{Заключение}
 \end{frame}
 \begin{frame}{Результаты, выносимые на защиту}

@@ -1,5 +1,9 @@
 function [dataset] = load_WIDSM_preprocessed_large()
-
+%
+% ( 1 - Jogging,  2 - Walking,
+%   3 - Upstairs, 4 - Downstairs,
+%   5 - Sitting,  6 - Standing )
+%
 if (length(mfilename()))
     cur_dir = fileparts(which(mfilename()));
 else

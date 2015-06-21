@@ -1,6 +1,7 @@
 function [ classes_distr, sensitivity ] = AnalyseMulticlassClassification( ...
                                             X, y, learn_fun, par_learn, ...
-                                            test_fun, learn_rate, nsplits )
+                                            test_fun, learn_rate, nsplits, ...
+                                            accuracy_figure_name)
 % The function provides multi-class classification analysis.
 % It splits sample on the learn and test parts 'nsplits' times, estimates
 % classifier parameters on a learn part, and calculates error values on a
@@ -17,11 +18,11 @@ function [ classes_distr, sensitivity ] = AnalyseMulticlassClassification( ...
 %   (note that learn_fun must receive 2 parameters: X_test and output of the learn_fun)
 % learn_rate - learn/test splitting size ratio, e.g. 0.7
 % nsplits - number of splittings, e.g. 100
+% accuracy_figure_name - name of saving figure
 %
 % Output:
 % classes_distr - K-by-K confusion matrix http://en.wikipedia.org/wiki/Confusion_matrix
 % sensitivity   - K-by-1 vector of TPR for each class
-
 
 classes = unique(y);
 train_size = round(learn_rate * length(y));
@@ -63,20 +64,33 @@ for split_idx = 1 : nsplits
 end
 fprintf('\nDone\n');
 
-sensitivity = diag(classes_distr) ./ sum(classes_distr, 2);
 classes_distr = classes_distr / nsplits;
-
 num_obj = sum(classes_distr, 2);
-mean_test = diag(classes_distr) ./ num_obj;
 
-figure
-hold on
-bar(num_obj)
-bar(num_obj .* mean_test, 'g')
+sensitivity = diag(classes_distr) ./ num_obj;
+
+h = figure; hold on;
+bar(classes, num_obj)
+bar(classes, num_obj .* sensitivity, 'g')
 axis('tight');
-xlabel('Class labels', 'FontSize', 20, 'FontName', 'Times', 'Interpreter','latex');
-ylabel('Objects number', 'FontSize', 20, 'FontName', 'Times', 'Interpreter','latex');
-set(gca, 'FontSize', 20, 'FontName', 'Times')
-title(['Mean test quality=',num2str(sum(diag(classes_distr)) / sum(num_obj))])
+ylim([0, max(num_obj) * 1.07]);
+xlabel('Class labels', ...
+       'FontSize', 20, 'FontName', 'Times', 'Interpreter', 'latex');
+ylabel('Objects number', ...
+       'FontSize', 20, 'FontName', 'Times', 'Interpreter', 'latex');
+set(gca, 'FontSize', 20, 'FontName', 'Times');
+text(classes, num_obj + ceil(0.01 * max(num_obj)), ...
+     num2str(sensitivity * 100, '%0.1f\\%%'), ...
+     'HorizontalAlignment', 'center', ...
+     'VerticalAlignment', 'bottom', ...
+     'FontSize', 15, 'FontName', 'Times', 'Interpreter', 'latex');
+title(['Mean accuracy: ', ...
+       num2str(sum(diag(classes_distr)) / sum(num_obj), '%0.4f')], ...
+      'FontSize', 22, 'FontName', 'Times', 'Interpreter', 'latex');
+
+if nargin >= 8
+    saveas(h,[accuracy_figure_name '.eps'], 'psc2');
+    saveas(h,[accuracy_figure_name '.png'], 'png');
+end
 
 end
