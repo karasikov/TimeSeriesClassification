@@ -122,7 +122,7 @@ else %ECOC approach
          try,
             X(:,z)=feval(base_test,TestData(:,1:end-1),Classifiers{z}.classifier,base_test_params);
          catch,
-            error('Exit: Decoding error when using custom testing strategy.');
+            error('Exit: Decoding error when using custom testing strategy: Base classifier prediction error');
          end
     end
 end
