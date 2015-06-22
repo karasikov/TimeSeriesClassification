@@ -36,7 +36,7 @@ Parameters.base_test = 'SVMtest';
 Parameters.base_params.settings='-t 2 -c 8.5 -g 0.12'; %for SVM binary classifier
 
 %% Analyze classification
-% Determine learn/test splitting parameters
+% Determine train/test splitting parameters
 NSPLITS = 50;
 LEARN_RATE = 0.7;
 % Launch analyzer

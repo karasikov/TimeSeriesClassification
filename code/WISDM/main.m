@@ -64,13 +64,13 @@ Parameters.coding=approaches{j};
 % MulticlassSVMTuning(X, y, Parameters, {'c', 3:2:7; 'g', 0.15:0.01:0.25});
 
 % Parameters.base_params.settings='-t 0 -c 10'; %for SVM binary classifier
-Parameters.base_params.settings='-t 2 -c 4 -g 0.8'; %for SVM binary classifier
+Parameters.base_params.settings='-t 2 -c 8 -g 0.8'; %for SVM binary classifier
 % Parameters.coding=approaches{2};
 % Parameters.base_params.settings='-t 2 -c 6 -g 0.09'; %for SVM binary classifier
 
 
 %% Analyze classification
-% Determine learn/test splitting parameters
+% Determine train/test splitting parameters
 NSPLITS = 50;
 LEARN_RATE = 0.7;
 % Launch analyzer

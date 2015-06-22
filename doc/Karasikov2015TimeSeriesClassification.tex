@@ -2,6 +2,8 @@
 
 \usepackage{jmlda}
 \usepackage{datetime}
+\usepackage{multicol}
+\graphicspath{{./pics/}}
 
 \pgfplotsset{compat=1.12}
 
@@ -245,16 +247,17 @@ w_r
 \end{bmatrix}.
 \]
 
-\item \textbf{Авторегрессионная модель}.
+\item \textbf{Авторегрессионная модель AR($k$)}.
 Задан временной ряд
 \[
 x = [x^{(1)},\dots,x^{(t)}],\quad x^{(k)}\in\mathbb{R}.
 \]
 Выберем в качестве модели порождения авторегрессионную модель порядка~$p$:
-\[
+\begin{equation}
+\label{eq:autoregressive_model}
 g(\vec{w},x)=[\hat{x}^{(1)},\dots,\hat{x}^{(t)}],\quad\text{где}\quad
 \hat{x}^{(k)}=w_0 + \sum\limits_{i=1}^{p} w_i x^{k-i},\ k=1,\dots,t.
-\]
+\end{equation}
 
 \item \textbf{Дискретное преобразование Фурье}.
 Задан временной ряд
@@ -278,7 +281,7 @@ g(\vec{w},x)=[\hat{x}^{(1)},\dots,\hat{x}^{(t)}],\quad\text{где}\quad
 % \hat{x}^{(k)}=w_0 + \sum\limits_{i=1}^{p} w_i x^{k-i},\ k=1,\dots,t.
 % \]
 \end{itemize}
-Данные примеры демонстрируют большую общность построения пространства признаков при помощи модели типа~\ref{eq:regression} и решения оптимизационной задачи~\ref{eq:feature_solution}.
+Приведенные примеры демонстрируют большую общность построения пространства признаков при помощи модели типа~\ref{eq:regression} и решения оптимизационной задачи~\ref{eq:feature_solution}.
 Вообще, легко видеть, что любая функция временного ряда~$\vec{f}:X\rightarrow \mathbb{R}^n$ может быть задана как решение оптимизационной задачи~\ref{eq:feature_solution} с соответствующей моделью~\ref{eq:regression} и функцией расстояния~$d$.
 
 \bigskip
@@ -313,13 +316,190 @@ g(\vec{w},x)=[\hat{x}^{(1)},\dots,\hat{x}^{(t)}],\quad\text{где}\quad
 \section{Вычислительный эксперимент}
 \label{sec:computational_experiment}
 
-\paragraph{Датасет MIT-BIH Arrhythmia Database~\cite{Goldberger13062000}}
+Вычислительный эксперимент проводился на данных для задачи классификации типов физической активности человека.
 
-\paragraph{Датасет USC-HAD~\cite{mi12:ubicomp-sagaware}}
-содержит показания акселерометра для 12 видов человеческой активности.
+\subsection{Датасет WISDM~\cite{Kwapisz:2011:ARU:1964897.1964918}}
+содержит показания акселерометра для $6$~видов человеческой активности:
+\begin{multicols}{2}
+\begin{enumerate}
+  \item Jogging
+  \item Walking
+  \item Upstairs
+  \item Downstairs
+  \item Sitting
+  \item Standing
+\end{enumerate}
+\end{multicols}
 
-\paragraph{Датасет WISDM~\cite{Kwapisz:2011:ARU:1964897.1964918}}
+Необработанные временные ряды, представляющие из себя последовательность размеченных показаний акселерометра (по тройке чисел на каждый отсчет времени с интервалом в $50$ миллисекунд), были разбиты на временные ряды длиной по $200$~отсчетов~($10$~секунд).
 
+\begin{table}[H]
+  \begin{tabular}{|c||c|c|c|c|c|c|}
+    \hline
+    Классы & Jogging & Walking & Upstairs & Downstairs & Sitting & Standing\\ \hline
+    Число объектов & $1624$ & $2087$ & $549$ & $438$ & $276$ & $231$\\ \hline
+  \end{tabular}
+  \caption{Распределение временных рядов по классам. Dataset:~WISDM.}
+\label{tbl:manual_usc_had}
+\end{table}
+
+\subsubsection{Ручное выделение признаков}
+\paragraph{Выбор признаков.}
+\label{par:manual_feature_selection}
+В первом эксперименте в качестве признаковых описаний временных рядов использовались их статистические функции.
+Каждой компоненте временного ряда сопоставлялись $40$~чисел~--- её среднее, стандартное отклонение, средний модуль отклонения от среднего, гистограмма с $10$ областями равной ширины.
+Полученные признаки для каждой компоненты объединялись и к ним добавлялся признак средней величины ускорения.
+
+\paragraph{Классификатор.}
+Задача многоклассовой классификации сводилась к задаче бинарной классификации при помощи подхода One-vs-One.
+В качестве бинарного классификатора использовался SVM с гауссовским ядром и параметрами $C=8.5,\ \gamma=0.12$.
+
+\paragraph{Результаты.}
+Для оценки качества решения использовалась процедура скользящего контроля.
+Исходная обучающая выборка~$\mathfrak{D}$ случайно разбивается $m$ раз на обучающую и контрольную~($\mathfrak{D}=\mathfrak{L_i}\sqcup\mathfrak{T_i}$). В качестве внешнего критерия качества метода обучения~$\mu$ бралось
+\[
+\frac{1}{m}\sum_{i=1}^{m}Q(\mu(\mathfrak{L_i}),\mathfrak{T_i}),
+\]
+где для средней точности (accuracy) классификации объектов класса~$c\in Y$
+\begin{equation}
+\label{eq:class_quality}
+Q_c(a,\mathfrak{T})=\frac{\sum\limits_{\substack{(x,y)\in\mathfrak{T}\\y=c}}\vec1\{a(x)=y\}}{\sum\limits_{\substack{(x,y)\in\mathfrak{T}\\y=c}}1},
+\end{equation}
+а для среднего качества решения задачи многоклассовой классификации
+\begin{equation}
+\label{eq:total_quality}
+Q(a,\mathfrak{T})=\frac{1}{|\mathfrak{T}|}\sum\limits_{(x,y)\in\mathfrak{T}}\vec1\{a(x)=y\}.
+\end{equation}
+На диаграмме ниже приведено качество классификации, усредненное по~$m=50$ случайным разбиениям исходной выборки на тестовую и контрольную в отношении $7$ к $3$.
+
+\begin{figure}[H]
+\includegraphics[width=0.5\textwidth]{{Accuracy_Dataset_WISDM_manual_features_nSplits_50_rate_0.7_approach_OneVsOne_HD_classifier_SVM_-t2-c8.5-g0.12}.eps}
+\caption{Точность классификации при ручном выделении признаков.
+Dataset:~WISDM.
+Под Mean accuracy понимается значение функционала~\ref{eq:total_quality}.
+Над столбцами приведены средние точности классификации для каждого класса по формуле~\ref{eq:class_quality}.}
+\label{fig:WISDM_manual_features}
+\end{figure}
+
+Как видно, классы~$3$~и~$4$ хорошо отделяются от остальных.
+Таким образом, если сначала отделить эту пару классов от остальных, а потом настроить бинарный классификатор для разделения классов~$3$~и~$4$, вводя дополнительные признаки (например те, которые будут рассматриваются далее), можно добиться требуемого качества решения задачи, но это не входит в цели данного эксперимента.
+
+\subsubsection{Модель авторегрессии~\ref{eq:autoregressive_model}}
+\paragraph{Признаковое описание.}
+\label{par:ar_feature_selection}
+Во втором эксперименте в качестве признаковых описаний временных рядов использовались все статистические функции, что брались в первом эксперименте~\ref{par:manual_feature_selection}, за исключением гистограммы.
+Вместо $10$ значений для каждого блока гистограммы использовались $7$ коэффициентов модели авторегрессии AR($6$)~(см.~\ref{eq:autoregressive_model}).
+Так же, проводилась предварительная нормализация признаков.
+
+\paragraph{Классификатор.}
+Задача многоклассовой классификации сводилась к задаче бинарной классификации при помощи подхода One-vs-All и экспоненциальной функцией потерь.
+В качестве бинарного классификатора использовался SVM с гауссовским ядром и параметрами $C=8,\ \gamma=0.8$.
+
+\paragraph{Результаты.}
+На диаграмме ниже приведено качество классификации, усредненное по~$m=50$ случайным разбиениям исходной выборки на тестовую и контрольную в отношении $7$ к $3$.
+
+\begin{figure}[H]
+\includegraphics[width=0.5\textwidth]{{Accuracy_Dataset_WISDM_nSplits_50_rate_0.7_approach_OneVsAll_LLB_classifier_SVM_-t2-c8-g0.8}.eps}
+\caption{Точность классификации для параметров модели авторегрессии в качестве признаковых описаний.
+Dataset:~WISDM.
+Под Mean accuracy понимается значение функционала~\ref{eq:total_quality}.
+Над столбцами приведены средние точности классификации для каждого класса по формуле~\ref{eq:class_quality}.}
+\label{fig:WISDM_AR}
+\end{figure}
+
+
+\subsection{Датасет USC-HAD~\cite{mi12:ubicomp-sagaware}}
+\label{seq:usc_had_dataset}
+содержит показания акселерометра для 12 типов физической активности человека:
+\begin{multicols}{2}
+\begin{enumerate}
+  \item walk forward
+  \item walk left
+  \item walk right
+  \item go upstairs
+  \item go downstairs
+  \item run forward
+  \item jump up and down
+  \item sit and fidget
+  \item stand
+  \item sleep
+  \item elevator up
+  \item elevator down
+\end{enumerate}
+\end{multicols}
+
+Выборка содержит примерно по $70$ шести"=компонентных временных ряда для каждого класса, а средняя длина временного ряда порядка~$3300$. Частота записи измерений сенсора~$100Hz$.
+
+\subsubsection{Ручное выделение признаков}
+
+\paragraph{Выбор признаков}
+В качестве признаков брались те же признаки, что и в предыдущем эксперименте~\ref{par:manual_feature_selection}.
+
+\paragraph{Классификатор}
+Задача многоклассовой классификации сводилась к задаче бинарной классификации при помощи подхода One-vs-One.
+В качестве бинарного классификатора использовался SVM с гауссовским ядром и параметрами $C=80,\ \gamma=0.002$.
+
+\paragraph{Результаты}
+Исходная выборка $100$ раз случайно разбивалась на обучающую и контрольную в отношении $7$ к $3$.
+В таблице ниже приведен результат --- процент верной классификации для объектов каждого класса.
+
+\begin{figure}[H]
+\includegraphics[width=0.5\textwidth]{{Accuracy_Dataset_USCHAD_manual_features_nSplits_100_rate_0.7_approach_OneVsOne_HD_classifier_SVM_-t2-c80-g0.002}.eps}
+\caption{Точность классификации при ручном выделении признаков.
+Dataset:~USC-HAD.
+Под Mean accuracy понимается значение функционала~\ref{eq:total_quality}.
+Над столбцами приведены средние точности классификации для каждого класса по формуле~\ref{eq:class_quality}.}
+\label{fig:USCHAD_manual_features}
+\end{figure}
+
+
+\subsubsection{Модель авторегрессии~\ref{eq:autoregressive_model}}
+
+\paragraph{Признаковое описание.}
+\label{par:ar_feature_selection_USCHAD}
+На данных рассматриваемых USC-HAD каждую секунду сенсор делал 100 измерений.
+Предполагая, что на каждое <<элементарное движение>> человек тратит порядка секунды, приходим к выводу, что параметры авторегрессионной модели малых порядков в данном случае неинформативны.
+Приведем исходные временные ряды к частоте $10Hz$ при помощи осреднения.
+
+В качестве признаковых описаний преобразованных временных рядов возьмем статистические функции из~\ref{par:manual_feature_selection}, за исключением гистограммы.
+Так же для каждой компоненты отдельно и для модуля результирующего ускорения и поворота добавим по $11$~параметров авторегрессионной модели~AR($10$)~(см.~\ref{eq:autoregressive_model}).
+Затем проведем нормализация признаков.
+
+\paragraph{Классификатор.}
+Задача многоклассовой классификации сводилась к задаче бинарной классификации при помощи подхода One-vs-All и экспоненциальной функцией потерь.
+В качестве бинарного классификатора использовался SVM с гауссовским ядром и параметрами $C=16,\ \gamma=0.1$.
+
+\paragraph{Результаты.}
+На диаграмме ниже приведено качество классификации, усредненное по~$m=200$ случайным разбиениям исходной выборки на тестовую и контрольную в отношении $7$ к $3$.
+
+\begin{figure}[H]
+\includegraphics[width=0.5\textwidth]{{Accuracy_Dataset_USCHAD_nSplits_200_rate_0.7_approach_OneVsAll_LLB_classifier_SVM_-t2-c16-g0.10}.eps}
+\caption{Точность классификации для параметров модели авторегрессии в качестве признаковых описаний.
+Dataset:~USC-HAD.
+Под Mean accuracy понимается значение функционала~\ref{eq:total_quality}.
+Над столбцами приведены средние точности классификации для каждого класса по формуле~\ref{eq:class_quality}.}
+\label{fig:WISDM_AR}
+\end{figure}
+
+\paragraph{Выделение фрагментов}
+
+Для сравнения проведем два эксперимента.
+В первом эксперименте аргументом модели аппроксимации будет подаваться сам ряд~\ref{eq:equal_fragmenting}, во втором эксперименте будем разбивать ряд на сегменты~\ref{eq:segment_fragmenting}.
+В качестве сегментов будем брать подотрезки временного ряда длиной~$100$, не заботясь о периодах.
+
+\subsection{Датасет MIT-BIH Arrhythmia Database~\cite{Goldberger13062000}}
+
+% \begin{table}[t]
+  % \caption{Качество многоклассовой классификации. Data~set:~MNIST, Binary~classifier:~Vote~SVM.}
+  % \begin{tabular}{|l||l|l|l|l|l|l|l|l|l|l|l|l|}
+    % \hline
+    % & \multicolumn{12}{c|}{Подходы} \\ \cline{2-13}
+    % Сжатие $\frac{d}{n}$ & \multicolumn{3}{c|}{One-vs-All} & \multicolumn{3}{c|}{One-vs-One} & \multicolumn{3}{c|}{ECOC-Random} & \multicolumn{3}{c|}{ECOC-BCH} \\ \cline{2-13}
+    % & $min$ & $avg$ & $max$ & $min$ & $avg$ & $max$ & $min$ & $avg$ & $max$ & $min$ & $avg$ & $max$\\ \hline
+% 0.05 & 76.6 					& 77.3 					& 78.2 					& 82.2 					& 83.3 					& 84.4 & 75.5 & 79.6 & 81.3 & 81.2 & 82.1 & 82.7\\ \hline
+  % \end{tabular}
+% \label{tbl:manual_usc_had}
+% \end{table}
 
 \bigskip
 \section{Заключение}

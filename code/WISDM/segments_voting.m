@@ -49,7 +49,7 @@ for segm_size_idx = 1 : length(segm_size)
     Parameters.base_params.settings='-c 60'; %for SVM binary classifier
 
     %% Analyze classification
-    % Determine learn/test splitting parameters
+    % Determine train/test splitting parameters
     NSPLITS = 5;
     LEARN_RATE = 0.7;
     % Launch analyzer

@@ -6,9 +6,21 @@ if iscell(X)
     [X, y, ~] = CellToMatrixDesign(X, y);
 end
 
-test_idx = 1 : size(X, 1);
-train_idx = randsample(test_idx, round(TRAIN_RATE * size(X, 1)));
-test_idx(train_idx) = [];
+classes = unique(y);
+
+train_idx = [];
+test_idx = [];
+
+for i = 1 : length(classes)
+    c = classes(i);
+    idxes = find(y == c);
+    test_idx_pos = 1 : length(idxes);
+    train_idx_pos = randsample(test_idx_pos, ...
+                               floor(TRAIN_RATE * length(test_idx_pos)));
+    test_idx_pos(train_idx_pos) = [];
+    train_idx = [train_idx; idxes(train_idx_pos)];
+    test_idx = [test_idx; idxes(test_idx_pos)];
+end
 
 initialized_settings = Parameters.base_params.settings;
 

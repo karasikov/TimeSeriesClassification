@@ -29,6 +29,7 @@ first  = reshape(tested_params(:,1), [length(parameters_ranges{1}),...
 second = reshape(tested_params(:,2), size(first));
 
 %# contour plot of parameter selection
+figure
 contour(first, second, reshape(quality, size(first))), colorbar
 hold on
 plot(first(idx), second(idx), 'rx')
