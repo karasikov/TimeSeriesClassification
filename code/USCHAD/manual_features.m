@@ -27,25 +27,33 @@ multi_features = {...
 
 %% Multi-class classification settings
 Parameters.coding = 'OneVsOne';
-Parameters.decoding = 'HD'; % 'LLB', 'ELB', 'ED', 'LAP', 'BDEN', 'AED', 'LLW', 'ELW'
+Parameters.decoding = 'HD';
 Parameters.base = 'SVM';
 Parameters.base_test = 'SVMtest';
 
-% Parameters.base_params.settings='-t 2'; % set SVM kernel
-% MulticlassSVMTuning(X, y, Parameters, {'c', 35:5:60; 'g', 0.0005:0.0005:0.004});
+% MulticlassSVMTuning(X, y, Parameters, {'c', 40:10:80; 'g', 0.001:0.001:0.004});
 
-Parameters.base_params.settings='-t 2 -c 45 -g 0.0025'; %for SVM binary classifier
+Parameters.base_params.settings='-t 2 -c 80 -g 0.002'; %for SVM binary classifier
 
-% X = Scale(X);
-% Parameters.base_params.settings='-t 2 -c 60 -g 0.05'; %for SVM binary classifier
+% X = ScaleCell(X);
+% Parameters.base_params.settings='-t 2 -c 40 -g 0.03'; %for SVM binary classifier
 
 %% Analyze classification
-% Determine learn/test splitting parameters
+% Determine train/test splitting parameters
 NSPLITS = 100;
 LEARN_RATE = 0.7;
 % Launch analyzer
+accuracy_figure_name = ['Accuracy_Dataset_USCHAD_manual_features' ...
+                        '_nSplits_' num2str(NSPLITS) ...
+                        '_rate_' num2str(LEARN_RATE) ...
+                        '_approach_' Parameters.coding ...
+                        '_' Parameters.decoding ...
+                        '_classifier_' Parameters.base ...
+                        '_' Parameters.base_params.settings];
+
 [confusion,sens] = AnalyseMulticlassClassification(X, y, ...
-                                      @MulticlassClassificationTrain, Parameters, ...
-                                      @MulticlassClassificationTest, ...
-                                      LEARN_RATE, NSPLITS);
+                        @MulticlassClassificationTrain, Parameters, ...
+                        @MulticlassClassificationTest, ...
+                        LEARN_RATE, NSPLITS, ...
+                        regexprep(accuracy_figure_name, ' ', ''));
 disp(sens');
