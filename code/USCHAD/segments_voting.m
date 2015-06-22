@@ -62,11 +62,20 @@ for segm_size_idx = 1 : length(segm_size)
     mean_accuracy(segm_size_idx) = sum(diag(confusion)) / sum(confusion(:));
 end
 
+accuracy_figure_name = ['VotingSegments_Dataset_USCHAD' ...
+                        '_nSplits_' num2str(NSPLITS) ...
+                        '_rate_' num2str(LEARN_RATE) ...
+                        '_approach_' Parameters.coding ...
+                        '_' Parameters.decoding ...
+                        '_classifier_' Parameters.base ...
+                        '_' Parameters.base_params.settings];
+accuracy_figure_name = regexprep(accuracy_figure_name, ' ', '');
+
 h = figure; hold on; grid on;
 plot(segm_size, mean_accuracy, 'Linewidth', 1.5);
 title('Voting Segments', 'FontSize', 20, 'FontName', 'Times', 'Interpreter', 'latex');
 xlabel('Size of segments', 'FontSize', 20, 'FontName', 'Times', 'Interpreter', 'latex');
 ylabel('Mean accuracy', 'FontSize', 20, 'FontName', 'Times', 'Interpreter', 'latex');
 set(gca, 'xdir', 'reverse', 'FontSize', 18, 'FontName', 'Times');
-saveas(h,['USCHAD_Voting_Accuracy.eps'], 'psc2');
-saveas(h,['USCHAD_Voting_Accuracy.png'], 'png');
+saveas(h,[accuracy_figure_name '.eps'], 'psc2');
+saveas(h,[accuracy_figure_name '.png'], 'png');
