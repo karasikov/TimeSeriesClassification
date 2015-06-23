@@ -112,10 +112,10 @@ $b$~--- алгоритм многоклассовой классификации.
 %%%%%%%%%%%%%%%%%%%%
 
 \begin{frame}{Модель сегмента временного ряда}
-Каждый сегмент есть временной ряд:
-$\mathbf{S}(x)\subset X.$
+% Каждый сегмент есть временной ряд:
+% $\mathbf{S}(x)\subset X.$
 
-\medskip
+% \medskip
 Сегменты временных рядов описывается моделями вида
 \[
 g(\mathbf{w}, x)\in X,\text{ где }\mathbf{w}\in\mathbb{R}^d.
@@ -127,8 +127,8 @@ g(\mathbf{w}, x)\in X,\text{ где }\mathbf{w}\in\mathbb{R}^d.
 \]
 \begin{block}{Исследуются}
 \begin{itemize}
-  \item Линейная регрессионная модель
-  \item Авторегрессионная модель (AR)
+  \item Модель линейной регрессии
+  \item Модель авторегрессии (AR)
   \item Модель скользящего среднего (MA)
   \item Фурье"=модель
   \item Вейвлет"=модель
@@ -223,7 +223,7 @@ a(x) = b(\mathbf{f}(x;\mathbf{S},g,\Theta)).
   \]
   \item регуляризованная лог. регрессия (RLR):
   \[
-  \frac{1}{2C} \|\bm w\|^2 + \sum_{(x,y)\in\mathfrak{D}}\log\left(1 + e^{-\bm{w}^\mathsf{T}\mathbf{f}(x)}\right)\to \min_{\bm w\in\mathbb{R}^n}.
+  \frac{1}{2C} \|\bm w\|^2 + \sum_{(x,y)\in\mathfrak{D}}\log\left(1 + e^{-y\bm{w}^\mathsf{T}\mathbf{f}(x)}\right)\to \min_{\bm w\in\mathbb{R}^n}.
   \]
 \end{itemize}
 % Эксперименты показали достаточную эффективность классификаторов
