@@ -7,6 +7,7 @@ end
 addpath(genpath(strcat(cur_dir, '/../classification')));
 addpath(genpath(strcat(cur_dir, '/../data_loading')));
 addpath(genpath(strcat(cur_dir, '/../feature_generation')));
+addpath(genpath(strcat(cur_dir, '/../segmentation')));
 
 %% feature generation
 % statistical features for one-component ts: [1 x ts_len] double
@@ -26,9 +27,9 @@ multi_features = {...
 
 dataset = aggregate(load_USCHAD_dataset(), 10);
 
-dataset = dataset([dataset.label] <= 10);
+% dataset = dataset([dataset.label] <= 10);
 
-num_segments = 1:9;
+num_segments = 2:9;
 segm_size = round(length(dataset(1).ts(1,:)) ./ num_segments);
 mean_accuracy = zeros(size(segm_size));
 
@@ -62,7 +63,7 @@ for segm_size_idx = 1 : length(segm_size)
     mean_accuracy(segm_size_idx) = sum(diag(confusion)) / sum(confusion(:));
 end
 
-accuracy_figure_name = ['VotingSegments_Dataset_USCHAD' ...
+accuracy_figure_name = ['VotingSegments_Dataset_USCHAD_full' ...
                         '_nSplits_' num2str(NSPLITS) ...
                         '_rate_' num2str(LEARN_RATE) ...
                         '_approach_' Parameters.coding ...
@@ -79,3 +80,17 @@ ylabel('Mean accuracy', 'FontSize', 20, 'FontName', 'Times', 'Interpreter', 'lat
 set(gca, 'xdir', 'reverse', 'FontSize', 18, 'FontName', 'Times');
 saveas(h,[accuracy_figure_name '.eps'], 'psc2');
 saveas(h,[accuracy_figure_name '.png'], 'png');
+
+h = figure; hold on; grid on;
+plot(segm_size, [mean_accuracy; mean_accuracy_], 'Linewidth', 1.5);
+title('Voting Segments vs Normal Distribution', ...
+      'FontSize', 20, 'FontName', 'Times', 'Interpreter', 'latex');
+xlabel('Size of segments', 'FontSize', 20, 'FontName', 'Times', 'Interpreter', 'latex');
+ylabel('Mean accuracy', 'FontSize', 20, 'FontName', 'Times', 'Interpreter', 'latex');
+legend({'Voting Segments', 'Normal distribution'}', ...
+       'Location','SouthWest',...
+       'FontSize',22,'FontName','Times','Interpreter','latex');
+legend('boxoff');
+set(gca, 'xdir', 'reverse', 'FontSize', 18, 'FontName', 'Times');
+saveas(h,['VotingSegmentsVsNormalDistribution_Dataset_USCHAD.eps'],'psc2');
+saveas(h,['VotingSegmentsVsNormalDistribution_Dataset_USCHAD.png'],'png');
