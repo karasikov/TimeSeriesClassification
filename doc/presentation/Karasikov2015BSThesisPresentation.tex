@@ -72,6 +72,7 @@
 % Обзор по методам порождения признаков
 % Simur modeling regression
 \begin{itemize}
+  \item Time-series data mining / P.\;Esling, C.\;Agon // ACM Comput. Surv. — 2012.— December.— Vol. 45, no. 1.— Pp. 12:1–12:34.
   \item Human activity recognition using smart phone embedded sensors: A linear dynamical systems method / W.\;Wang, H.\;Liu, L.\;Yu, F.\;Sun // Neural Networks (IJCNN), 2014 International Joint Conference on.— 2014.—July.— Pp. 1185–1190.
   \item Kwapisz,\;J.\;R. Activity recognition using cell phone accelerometers / J.\;R.\;Kwapisz, G.\;M.\;Weiss, S.\;A.\;Moore // SIGKDD Explor. Newsl.— 2011.—March.— Vol. 12, no. 2.— Pp. 74–82. http:
 //doi.acm.org/10.1145/1964897.1964918.
@@ -210,14 +211,21 @@ a(x) = b(\mathbf{f}(x;\mathbf{S},g,\Theta)).
 Тогда для решения задачи бинарной классификации временных рядов необходимо задать метод обучения~$\mu_b:\;\mathfrak{D}\mapsto f$.
 
 \medskip
-Например, для SVM с линейным ядром
-\[
-f(x; \bm w) = \sign(\bm{w}^{\mathsf{T}}\mathbf{f}(x) - w_0),
-\]
-где $\bm w$ и $w_0$~--- решения оптимизационной задачи
-\[
-\frac{1}{2C} \|\bm w\|^2 + \sum_{(x,y)\in\mathfrak{D}}\left(1-y(\bm{w}^\mathsf{T}\mathbf{f}(x) - w_0)\right)_+ \to \min_{\bm w\in\mathbb{R}^n,\;w_0\in\mathbb{R}}.
-\]
+Например,
+\begin{itemize}
+  \item SVM с линейным ядром:
+  \[
+  f(x; \bm w) = \sign(\bm{w}^{\mathsf{T}}\mathbf{f}(x) - w_0),
+  \]
+  где $\bm w$ и $w_0$~--- решения оптимизационной задачи
+  \[
+  \frac{1}{2C} \|\bm w\|^2 + \sum_{(x,y)\in\mathfrak{D}}\left(1-y(\bm{w}^\mathsf{T}\mathbf{f}(x) - w_0)\right)_+ \to \min_{\bm w\in\mathbb{R}^n,\;w_0\in\mathbb{R}};
+  \]
+  \item регуляризованная лог. регрессия (RLR):
+  \[
+  \frac{1}{2C} \|\bm w\|^2 + \sum_{(x,y)\in\mathfrak{D}}\log\left(1 + e^{-\bm{w}^\mathsf{T}\mathbf{f}(x)}\right)\to \min_{\bm w\in\mathbb{R}^n}.
+  \]
+\end{itemize}
 % Эксперименты показали достаточную эффективность классификаторов
 % \begin{itemize}
   % \item Машина опорных векторов (SVM)
@@ -247,33 +255,6 @@ f(x; \bm w) = \sign(\bm{w}^{\mathsf{T}}\mathbf{f}(x) - w_0),
     % \ENDFOR
   % \ENDFOR
 % \END
-% \end{frame}
-
-%%%%%%%%%%%%%%%%%%%%
-
-% \begin{frame}{Иллюстрация проблемы}
-% Датасет USC-HAD содержит показания акселерометра для 12 видов человеческой активности:
-% \begin{multicols}{2}
-% \begin{enumerate}
-  % \item walk forward
-  % \item walk left
-  % \item walk right
-  % \item go upstairs
-  % \item go downstairs
-  % \item run forward
-  % \item jump up and down
-  % \item sit and fidget
-  % \item stand
-  % \item sleep
-  % \item elevator up
-  % \item elevator down
-% \end{enumerate}
-% \end{multicols}
-
-% Выборка содержит примерно по $70$ шести"=компонентных временных ряда для каждого класса, а средняя длина временного ряда порядка~$3300$.
-
-% \textbf{Задача:} многоклассовая классификация.
-
 % \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%
@@ -353,38 +334,95 @@ f(x; \bm w) = \sign(\bm{w}^{\mathsf{T}}\mathbf{f}(x) - w_0),
 %%%%%%%%%%%%%%%%%%%%
 
 \begin{frame}{Dataset USC-HAD}
+\textbf{Выборка содержит:} показания акселерометра и гироскопа для 12 типов физической активности.
 
+\bigskip
+Частота исходной выборки $100\,\text{Hz}$.
+
+Приведем данные к частоте $10\,\text{Hz}$.
+
+\bigskip
+Будем решать задачу многоклассовой классификации, классификатор RBF SVM ($\gamma=0.1$, $C=16$), подход One-vs-All, $200$ случайных разбиений в отношении $7$ к $3$.
+
+\medskip
+В качестве признаков берутся коэффициенты модели авторегрессии.
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%
 
-\begin{frame}{Dataset USC-HAD: сегментация}
-
+\begin{frame}{Dataset USC-HAD: без сегментации}
+\begin{minipage}{0.7\textwidth}
+\includegraphics[width=\linewidth]{{../pics/Accuracy_Dataset_USCHAD_nSplits_200_rate_0.7_approach_OneVsAll_LLB_classifier_SVM_-t2-c16-g0.10}.eps}
+\end{minipage}
+\begin{minipage}{0.25\textwidth}
+\textbf{Class labels:}
+{\footnotesize
+\begin{enumerate}
+  \item walk forward
+  \item walk left
+  \item walk right
+  \item go upstairs
+  \item go downstairs
+  \item run forward
+  \item jump up and down
+  \item sit and fidget
+  \item stand
+  \item sleep
+  \item elevator up
+  \item elevator down
+\end{enumerate}
+}
+\end{minipage}
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%
 
-\begin{frame}{Dataset USC-HAD: голосование}
-
+\begin{frame}{Dataset USC-HAD: голосование сегментов}
+\begin{figure}
+\includegraphics[width=0.7\linewidth]{{../pics/VotingSegments_Dataset_USCHAD_nSplits_50_rate_0.7_approach_OneVsOne_HD_classifier_SVMLinear_-c1}.eps}
+\caption{Эксперимент на первых 10 классах. One-vs-One, RLR ($C=1$).}
+\end{figure}
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%
 
-\begin{frame}{Dataset USC-HAD: распределения}
+\begin{frame}{Dataset USC-HAD: нормальные распределения параметров}
+\begin{figure}
+\includegraphics[width=0.7\linewidth]{{../pics/NormalDistr_Dataset_USCHAD_nSplits_50_rate_0.7_approach_OneVsOne_HD_classifier_SVMLinear_-c0.25}.eps}
+\caption{На первых 10 классах. One-vs-One, RLR ($C=0.25$).}
+\end{figure}
+\end{frame}
 
+%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}{Dataset USC-HAD: сравнение на всей выборке}
+\begin{figure}
+\includegraphics[width=0.7\linewidth]{{../pics/VotingSegmentsVsNormalDistribution_Dataset_USCHAD}.eps}
+\caption{Сравнение на всей выборки (12 классов).}
+\end{figure}
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%
 
 \begin{frame}{Заключение}
+
+\begin{itemize}
+  \item Метод классификации временных рядов в пространстве параметров моделей показывает высокие результаты.
+  \item Использование модели авторегрессии не накладывает ограничений на алгоритм сегментации.
+  \item Алгоритм голосования менее устойчив к изменению длине сегмента.
+\end{itemize}
+
 \end{frame}
+
+%%%%%%%%%%%%%%%%%%%%
+
 \begin{frame}{Результаты, выносимые на защиту}
 \begin{itemize}
-  \item Предложен алгоритмы построения пространства признаков
+  \item Предложен алгоритм построения пространства признаков.
   \smallskip
-  \item Предложен алгоритм классификации временных рядов
+  \item Предложены алгоритмы классификации временных рядов
   \medskip
-  \item Выполнена программная реализация и проведены численные эксперименты, показавшие повышения качества решения задачи классификации
+  \item Выполнена программная реализация и проведены численные эксперименты, показавшие повышение качества решения задачи классификации типов физической активности.
 \end{itemize}
 \end{frame}
 
