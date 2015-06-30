@@ -69,6 +69,7 @@ num_obj = sum(classes_distr, 2);
 
 sensitivity = diag(classes_distr) ./ num_obj;
 
+%% bar chart with quality
 h = figure; hold on;
 bar(classes, num_obj)
 bar(classes, num_obj .* sensitivity, 'g')
@@ -92,6 +93,29 @@ title(['Mean accuracy: ', ...
 if nargin >= 8
     saveas(h,[accuracy_figure_name '.eps'], 'psc2');
     saveas(h,[accuracy_figure_name '.png'], 'png');
+end
+
+%% confusion matrix to tex
+num_classes = length(classes);
+confusion = classes_distr ./ repmat(num_obj, 1, num_classes);
+latex_table = sprintf(['\\begin{tabular}{|', repmat('c|', 1, 2 + num_classes), '}\n',...
+                       '  \\cline{3-%d}\n'...
+                       '  \\multicolumn{2}{c|}{} & \\multicolumn{%d}{c|}{Predicted class} \\\\ \\cline{3-%d}\n'],...
+                       2 + num_classes, num_classes, 2 + num_classes);
+latex_table = [latex_table,...
+    '  \multicolumn{2}{c|}{} ', num2str(classes', ' & $%d$'), sprintf('\\\\ \\cline{1-%d}\n', 2 + num_classes)];
+latex_table = [latex_table,...
+    sprintf('  \\multirow{%d}{*}{\\begin{sideways}Actual class\\end{sideways}}\n', num_classes)];
+
+for i = 1 : num_classes - 1
+    latex_table = [latex_table, sprintf(['  & $%d$ ', num2str(confusion(i, :), ' & $%.2f$'), '\\\\ \\cline{2-%d}\n'], classes(i), 2 + num_classes)];
+end
+latex_table = [latex_table, sprintf(['  & $%d$ ', num2str(confusion(end, :), ' & $%.2f$'), '\\\\ \\cline{1-%d}\n\\end{tabular}\n'], classes(end), 2 + num_classes)];
+
+if nargin >= 8
+    fid = fopen([accuracy_figure_name '.tex'], 'w');
+    fprintf(fid, '%s', latex_table);
+    fclose(fid);
 end
 
 end
