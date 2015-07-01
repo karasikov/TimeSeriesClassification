@@ -73,8 +73,8 @@
 % Simur modeling regression
 \begin{itemize}
   \item Time-series data mining / P.\;Esling, C.\;Agon // ACM Comput. Surv. — 2012.— December.— Vol. 45, no. 1.— Pp. 12:1–12:34.
+  \item Segment and combine approach for non-parametric time-series classification / P.\;Geurts, L.\;Wehenkel // Knowledge Discovery in Databases: PKDD 2005.— Springer, 2005.— Pp. 478–485.
   \item Human activity recognition using smart phone embedded sensors: A linear dynamical systems method / W.\;Wang, H.\;Liu, L.\;Yu, F.\;Sun // Neural Networks (IJCNN), 2014 International Joint Conference on.— 2014.—July.— Pp. 1185–1190.
-  \item Kwapisz,\;J.\;R. Activity recognition using cell phone accelerometers / J.\;R.\;Kwapisz, G.\;M.\;Weiss, S.\;A.\;Moore // SIGKDD Explor. Newsl.— 2011.—March.— Vol. 12, no. 2.— Pp. 74–82. http:
 //doi.acm.org/10.1145/1964897.1964918.
 \end{itemize}
 \end{frame}
@@ -89,10 +89,10 @@ $X=\left\{x_i=[x^{(1)}_i,\dots,x^{(t)}_i]:\; i\in\mathcal{I}\right\}$~--- времен
 
 \bigskip
 \textbf{Модель классификации:}
-$a=b\circ \mathbf{f}\circ \mathbf{S},$ где
+$a=b\circ \mathbf{f}\circ S,$ где
 
 \smallskip
-$\mathbf{S}$~--- алгоритм сегментации~$\mathbf{S}:\;x\mapsto \{s^{(1)},\dots,s^{(p)}\},$\\
+$S$~--- алгоритм сегментации~$S:\;x\mapsto \{s^{(1)},\dots,s^{(p)}\},$\\
 \smallskip
 \hspace*{154pt}где $s^{(k)}=[x^{(t_k)}, \dots, x^{(t_{k+1}-1)}].$
 
@@ -101,11 +101,11 @@ $\mathbf{f}$~--- признаковое описание набора сегментов,\\
 $b$~--- алгоритм многоклассовой классификации.
 
 \bigskip
-\textbf{Метод обучения} $\mu:\;(X\times Y)^{m}\to A$
+\textbf{Метод обучения} $\mu:\;\mathfrak{D}\mapsto a$
 
 выбирается по~скользящему контролю:
 \[
-\mu^* = \argmin_{\mu}CV(\mu,\mathfrak{D}).
+\mu^* = \argmin_{\mu}\widehat{CV}(\mu,\mathfrak{D}).
 \]
 \end{frame}
 
@@ -118,22 +118,83 @@ $b$~--- алгоритм многоклассовой классификации.
 % \medskip
 Сегменты временных рядов описывается моделями вида
 \[
-g(\mathbf{w}, x)\in X,\text{ где }\mathbf{w}\in\mathbb{R}^d.
+g(\mathbf{w}, x)\in X,\text{ где }\mathbf{w}\in\mathbb{R}^n.
 \]
 Параметры настроенной модели определяются по формуле
 \[
 \mathbf{w}_g(x) =
-\argmin_{\mathbf{w}\in \mathbb{R}^d} \rho\left(g(\mathbf{w},x), x\right).
+\argmin_{\mathbf{w}\in \mathbb{R}^n} \rho\left(g(\mathbf{w},x), x\right).
 \]
 \begin{block}{Исследуются}
 \begin{itemize}
   \item Модель линейной регрессии
   \item Модель авторегрессии (AR)
-  \item Модель скользящего среднего (MA)
   \item Фурье"=модель
   \item Вейвлет"=модель
 \end{itemize}
 \end{block}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}{Модель линейной регрессии}.
+Пусть задан многокомпонентный временной ряд
+\[
+x = [\bm{x}^{(1)}, \dots, \bm{x}^{(t)}],\text{ где }
+\bm{x}^{(k)}=[x_0^{(k)},\dots,x_n^{(k)}]^{\mathsf{T}}.
+\]
+Модель линейной регрессии одной из компонент на остальные:
+\[
+g(\mathbf{w},x)=[\hat{\bm{x}}^{(1)},\dots,\hat{\bm{x}}^{(t)}],\text{ где }
+\hat{\bm{x}}^{(k)}=[\hat{x}_0^{(k)},x_1^{(k)},\dots,x_n^{(k)}]^{\mathsf{T}},
+\]
+\[
+\hat{\bm{x}}_0=
+\begin{bmatrix}
+\hat{x}_0^{(1)} \\
+\vdots  \\
+\hat{x}_0^{(t)}
+\end{bmatrix}=
+\underbrace{
+\begin{bmatrix}
+x_1^{(1)} & \dots & x_n^{(1)} \\
+\vdots         & \ddots & \vdots          \\
+x_1^{(t)} & \dots & x_n^{(t)}
+\end{bmatrix}
+}_{X}
+\underbrace{
+\begin{bmatrix}
+w_1 \\
+\vdots  \\
+w_n
+\end{bmatrix}
+}_{\mathbf{w}}.
+\]
+Тогда, выбрав в качестве~$\rho$ евклидово расстояние, получим
+\[
+\mathbf{w}_g(x)
+=\argmin_{\mathbf{w}\in \mathbb{R}^n} \rho\left(g(\mathbf{w},x), x\right)
+=\left(X^{\mathsf{T}}X\right)^{-1}X^{\mathsf{T}}\bm{x}_0.
+\]
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}{Модель авторегрессии AR($p$)}
+Задан временной ряд
+\[
+x = [x^{(1)},\dots,x^{(t)}],\ x^{(k)}\in\mathbb{R},\ k=1,\dots,t.
+\]
+Модель аппроксимации~--- авторегрессионная модель порядка~$p$:
+\[
+\label{eq:autoregressive_model}
+g(\mathbf{w},x)=[x^{(1)},\dots,x^{(p)},\hat{x}^{(p+1)},\dots,\hat{x}^{(t)}],
+\]
+где
+\[
+\hat{x}^{(k)}=w_0 + \sum\limits_{i=1}^{p} w_i x^{(k-i)},\ k=p+1,\dots,t.
+\]
+Признаковое описание~$\mathbf{w}_g(x)$ определяется аналогично случаю линейной регрессии.
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%
@@ -143,11 +204,11 @@ g(\mathbf{w}, x)\in X,\text{ где }\mathbf{w}\in\mathbb{R}^d.
 \begin{itemize}
   \item Принцип голосования: обучение алгоритма $b$ на~новой обучающей выборке~$\widehat{\mathfrak{D}}$, составленной из сегментов временных рядов исходной обучающей выборки~$\mathfrak{D}$:
   \[
-  \widehat{\mathfrak{D}}=\left\{(\mathbf{w}_g(s),y):\;(x,y)\in\mathfrak{D},\,s\in \mathbf{S}(x)\right\}
+  \widehat{\mathfrak{D}}=\left\{(\mathbf{w}_g(s),y):\;(x,y)\in\mathfrak{D},\,s\in S(x)\right\}
   \]
   и последующая классификация
   \[
-  a(x;\mathbf{S},g,b)=h\left(\left\{b(\mathbf{w}_g(s)):\;s\in \mathbf{S}(x)\right\}\right).
+  a(x;S,g,b)=h\left(\left\{b(\mathbf{w}_g(s)):\;s\in S(x)\right\}\right).
   \]
   \item Классификация в пространстве гиперпараметров моделей (параметров распределений параметров моделей).
 \end{itemize}
@@ -156,21 +217,21 @@ g(\mathbf{w}, x)\in X,\text{ где }\mathbf{w}\in\mathbb{R}^d.
 %%%%%%%%%%%%%%%%%%%%
 
 \begin{frame}{Классификация в пространстве гиперпараметров моделей}
-$\mathbf{w}_g\circ \mathbf{S}$ дает множество наборов параметров модели:
+$\mathbf{w}_g\circ S$ дает множество наборов параметров модели:
 \[
-W(x;\mathbf{S},g)=\left\{\mathbf{w}_g(s):\;s\in \mathbf{S}(x)\right\}.
+W(x;S,g)=\left\{\mathbf{w}_g(s):\;s\in S(x)\right\}.
 \]
 \begin{block}{Гипотеза порождения временного ряда}
-Сегменты временного ряда~$s\in \mathbf{S}(x)$ описываются моделью~$g(\mathbf{w}, s)$ со случайными параметрами~$\mathbf{w}$ из параметрического семейства распределений~$\left\{\mathsf{P}_{\bm{\theta}}\right\}_{\bm{\theta}\in\Theta}$.
+Сегменты временного ряда~$s\in S(x)$ описываются моделью~$g(\mathbf{w}, s)$ со случайными параметрами~$\mathbf{w}$ из параметрического семейства распределений~$\left\{\mathsf{P}_{\bm{\theta}}\right\}_{\bm{\theta}\in\Theta}$.
 \end{block}
 
 \textbf{Предлагается} в качестве признакового описания временного ряда использовать оценку вектора параметров распределения:
 \[
-\mathbf{f}(x;\mathbf{S},g,\Theta)=\argmax_{\bm{\theta}\in\Theta}\mathcal{L}\left(\bm{\theta}|W(x;\mathbf{S},g)\right).
+\mathbf{f}(x;S,g,\Theta)=\argmax_{\bm{\theta}\in\Theta}\mathcal{L}\left(\bm{\theta}|W(x;S,g)\right).
 \]
 Тогда получим алгоритм классификации временных рядов:
 \[
-a(x) = b(\mathbf{f}(x;\mathbf{S},g,\Theta)).
+a(x) = b(\mathbf{f}(x;S,g,\Theta)).
 \]
 \end{frame}
 
@@ -342,17 +403,17 @@ a(x) = b(\mathbf{f}(x;\mathbf{S},g,\Theta)).
 Приведем данные к частоте $10\,\text{Hz}$.
 
 \bigskip
-Будем решать задачу многоклассовой классификации, классификатор RBF SVM ($\gamma=0.1$, $C=16$), подход One-vs-All, $200$ случайных разбиений в отношении $7$ к $3$.
+Будем решать задачу многоклассовой классификации, классификатор RBF SVM ($C=16$, $\gamma=0.04$), подход One-vs-All, $100$ случайных разбиений в пропорции $7$ к $3$.
 
 \medskip
-В качестве признаков берутся коэффициенты модели авторегрессии.
+В качестве признаков берутся коэффициенты модели авторегрессии $AR(10)$ и первые $5$ коэффициентов модели Фурье.
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%
 
 \begin{frame}{Dataset USC-HAD: без сегментации}
 \begin{minipage}{0.7\textwidth}
-\includegraphics[width=\linewidth]{{../pics/Accuracy_Dataset_USCHAD_nSplits_200_rate_0.7_approach_OneVsAll_LLB_classifier_SVM_-t2-c16-g0.10}.eps}
+\includegraphics[width=\linewidth]{{../pics/Accuracy_Dataset_USCHAD_fourier_AR_nSplits_100_rate_0.7_approach_OneVsOne_HD_classifier_SVM_-t2-c16-g0.04}.eps}
 \end{minipage}
 \begin{minipage}{0.25\textwidth}
 \textbf{Class labels:}
@@ -377,28 +438,10 @@ a(x) = b(\mathbf{f}(x;\mathbf{S},g,\Theta)).
 
 %%%%%%%%%%%%%%%%%%%%
 
-\begin{frame}{Dataset USC-HAD: голосование сегментов}
+\begin{frame}{Segments Voting vs Normal Distribution, случайная сегментация}
 \begin{figure}
-\includegraphics[width=0.7\linewidth]{{../pics/VotingSegments_Dataset_USCHAD_nSplits_50_rate_0.7_approach_OneVsOne_HD_classifier_SVMLinear_-c1}.eps}
-\caption{Эксперимент на первых 10 классах. One-vs-One, RLR ($C=1$).}
-\end{figure}
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%
-
-\begin{frame}{Dataset USC-HAD: нормальные распределения параметров}
-\begin{figure}
-\includegraphics[width=0.7\linewidth]{{../pics/NormalDistr_Dataset_USCHAD_nSplits_50_rate_0.7_approach_OneVsOne_HD_classifier_SVMLinear_-c0.25}.eps}
-\caption{На первых 10 классах. One-vs-One, RLR ($C=0.25$).}
-\end{figure}
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%
-
-\begin{frame}{Dataset USC-HAD: сравнение на всей выборке}
-\begin{figure}
-\includegraphics[width=0.7\linewidth]{{../pics/VotingSegmentsVsNormalDistribution_Dataset_USCHAD}.eps}
-\caption{Сравнение на всей выборки (12 классов).}
+\includegraphics[width=0.7\linewidth]{{../pics/VotingSegmentsVsNormalDistribution_Dataset_USCHAD_nSplits_5_rate_0.7_approach_OneVsOne_HD_classifier_SVMLinear_-c0.25}.eps}
+\caption{На первых 10 классах. One-vs-One, Linear SVM ($C=0.25$).}
 \end{figure}
 \end{frame}
 
@@ -409,7 +452,7 @@ a(x) = b(\mathbf{f}(x;\mathbf{S},g,\Theta)).
 \begin{itemize}
   \item Метод классификации временных рядов в пространстве параметров моделей показывает высокие результаты.
   \item Использование модели авторегрессии не накладывает ограничений на алгоритм сегментации.
-  \item Алгоритм голосования менее устойчив к изменению длине сегмента.
+  \item При случайной сегментации голосование сегментов оказывается лучше алгоритма классификации в пространстве гиперпараметров.
 \end{itemize}
 
 \end{frame}
@@ -420,7 +463,7 @@ a(x) = b(\mathbf{f}(x;\mathbf{S},g,\Theta)).
 \begin{itemize}
   \item Предложен алгоритм построения пространства признаков.
   \smallskip
-  \item Предложены алгоритмы классификации временных рядов
+  \item Предложены алгоритмы классификации временных рядов.
   \medskip
   \item Выполнена программная реализация и проведены численные эксперименты, показавшие повышение качества решения задачи классификации типов физической активности.
 \end{itemize}
