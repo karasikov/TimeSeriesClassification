@@ -16,7 +16,6 @@ single_features = {...
     @(ts)( std(ts) ),...
     @(ts)( mean(abs(ts - mean(ts))) ),...
     @(ts)( CalcAR(ts, 10) ),...
-...
 };
 
 % tses: [num_components x ts_len] double
@@ -25,17 +24,17 @@ multi_features = {...
     @(tses)( CalcAR(sqrt(sum(tses(4:6,:).^2, 1)), 10) ),...
 };
 
+% smoothing: round each 10 measurements
 dataset = aggregate(load_USCHAD_dataset(), 10);
 
 dataset = dataset([dataset.label] <= 10);
 
-num_segments = 2:9;
-segm_size = round(length(dataset(1).ts(1,:)) ./ num_segments);
+segm_size = round(linspace(30, length(dataset(1).ts(1,:)) / 2, 10));
 mean_accuracy = zeros(size(segm_size));
 
 for segm_size_idx = 1 : length(segm_size)
     [X,y] = GenerateFeatures(dataset, single_features, multi_features, ...
-                             @(tses)( partition(tses, segm_size(segm_size_idx)) ), ...
+                             @(tses)( random_segments(tses, segm_size(segm_size_idx), 20) ), ...
                              @(fragments_features)( normal_distribution(fragments_features) ));
     X = ScaleCell(X);
 
@@ -50,7 +49,7 @@ for segm_size_idx = 1 : length(segm_size)
 
     %% Analyze classification
     % Determine learn/test splitting parameters
-    NSPLITS = 50;
+    NSPLITS = 5;
     LEARN_RATE = 0.7;
     % Launch analyzer
     [confusion,sens] = AnalyseMulticlassClassification(X, y, ...

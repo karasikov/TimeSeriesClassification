@@ -1,4 +1,4 @@
-function period = FindPeriod(ts)
+function [period] = EstimatePeriod(ts)
 
 g1 = ts(1 : end - 1);
 g2 = ts(2 : end);

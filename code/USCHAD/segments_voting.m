@@ -16,7 +16,6 @@ single_features = {...
     @(ts)( std(ts) ),...
     @(ts)( mean(abs(ts - mean(ts))) ),...
     @(ts)( CalcAR(ts, 10) ),...
-...
 };
 
 % tses: [num_components x ts_len] double
@@ -25,17 +24,17 @@ multi_features = {...
     @(tses)( CalcAR(sqrt(sum(tses(4:6,:).^2, 1)), 10) ),...
 };
 
+% smoothing: round each 10 measurements
 dataset = aggregate(load_USCHAD_dataset(), 10);
 
-% dataset = dataset([dataset.label] <= 10);
+dataset = dataset([dataset.label] <= 10);
 
-num_segments = 2:9;
-segm_size = round(length(dataset(1).ts(1,:)) ./ num_segments);
+segm_size = round(linspace(30, length(dataset(1).ts(1,:)) / 2, 10));
 mean_accuracy = zeros(size(segm_size));
 
 for segm_size_idx = 1 : length(segm_size)
     [X,y] = GenerateFeatures(dataset, single_features, multi_features, ...
-                             @(tses)( partition(tses, segm_size(segm_size_idx)) ), ...
+                             @(tses)( random_segments(tses, segm_size(segm_size_idx), 20) ), ...
                              @(fragments_features)( fragments_features ));
     X = ScaleCell(X);
 
@@ -46,12 +45,11 @@ for segm_size_idx = 1 : length(segm_size)
     Parameters.base_test = 'SVMLinearTest';
 
     % MulticlassSVMTuning(X, y, Parameters, {'c', 35:5:60; 'g', 0.0005:0.0005:0.004});
-
-    Parameters.base_params.settings='-c 1'; %for SVM binary classifier
+    Parameters.base_params.settings='-c 0.25'; %for SVM binary classifier
 
     %% Analyze classification
     % Determine learn/test splitting parameters
-    NSPLITS = 50;
+    NSPLITS = 5;
     LEARN_RATE = 0.7;
     % Launch analyzer
     [confusion,sens] = AnalyseMulticlassClassification(X, y, ...
@@ -88,9 +86,9 @@ title('Voting Segments vs Normal Distribution', ...
 xlabel('Size of segments', 'FontSize', 20, 'FontName', 'Times', 'Interpreter', 'latex');
 ylabel('Mean accuracy', 'FontSize', 20, 'FontName', 'Times', 'Interpreter', 'latex');
 legend({'Voting Segments', 'Normal distribution'}', ...
-       'Location','SouthWest',...
+       'Location','NorthWest',...
        'FontSize',22,'FontName','Times','Interpreter','latex');
 legend('boxoff');
 set(gca, 'xdir', 'reverse', 'FontSize', 18, 'FontName', 'Times');
-saveas(h,['VotingSegmentsVsNormalDistribution_Dataset_USCHAD.eps'],'psc2');
-saveas(h,['VotingSegmentsVsNormalDistribution_Dataset_USCHAD.png'],'png');
+saveas(h,['NormalDistributionVS' accuracy_figure_name '.eps'],'psc2');
+saveas(h,['NormalDistributionVS' accuracy_figure_name '.png'],'png');
