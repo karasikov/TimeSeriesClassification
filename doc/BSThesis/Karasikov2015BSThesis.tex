@@ -279,7 +279,7 @@ w_r
 \]
 “огда, выбрав в качестве~$\rho$ евклидово рассто€ние, по определению~\ref{def:feature_description} получим признаковое описание объекта~$x$:
 \[
-\vec{f}_g(x)=\left(X^{\mathsf{T}}X\right)^{-1}X^{\mathsf{T}}\hat{\vec{x}}_0.
+\vec{f}_g(x)=\left(X^{\mathsf{T}}X\right)^{-1}X^{\mathsf{T}}\vec{x}_0.
 \]
 
 \item \textbf{ћодель авторегрессии AR($p$)}.
@@ -290,9 +290,12 @@ x = [x^{(1)},\dots,x^{(t)}],\ x^{(k)}\in\mathbb{R},\ k=1,\dots,t.
 ¬ыберем в качестве модели аппроксимации авторегрессионную модель пор€дка~$p$:
 \begin{equation}
 \label{eq:autoregressive_model}
-g(\mathbf{w},x)=[\hat{x}^{(1)},\dots,\hat{x}^{(t)}],\text{ где }
-\hat{x}^{(k)}=w_0 + \sum\limits_{i=1}^{p} w_i x^{(k-i)},\ k=1,\dots,t.
+g(\mathbf{w},x)=[x^{(1)},\dots,x^{(p)},\hat{x}^{(p+1)},\dots,\hat{x}^{(t)}],
 \end{equation}
+где
+\[
+\hat{x}^{(k)}=w_0 + \sum\limits_{i=1}^{p} w_i x^{(k-i)},\ k=p+1,\dots,t.
+\]
 ƒалее признаковое описание определ€етс€ аналогично случаю линейной регрессии.
 
 \item \textbf{ƒискретное преобразование ‘урье}.
