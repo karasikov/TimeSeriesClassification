@@ -90,7 +90,7 @@ class Classifier:
     def _predict(self, account, ts_string):
         """ Predict class' label of the time-series """
 
-        if account not in self.classifier.keys():
+        if account not in self.classifier.keys() or self.classifier[account] is None:
             return "Train classifier"
         else:
             time, ts = self._prepare_ts(ts_string)
