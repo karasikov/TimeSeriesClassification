@@ -179,6 +179,7 @@ class Server:
                 received_string = connection.receive_string()
                 if received_string[:len(EXIT_TAG)].upper() == EXIT_TAG:
                     print >> sys.stderr, "exit command was received, server will be halted"
+                    self.sock.close()
                     return
 
                 # Predict class or add new observation to training set
