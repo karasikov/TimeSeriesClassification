@@ -63,5 +63,25 @@ def get_features(ts):
     features.extend(ts.mean(0))
     features.extend(ts.std(0))
     features.extend(np.abs(ts - ts.mean(0)).mean(0))
+
     features.extend([((ts ** 2).sum(1) ** 0.5).mean()])
+
+    features.extend(calculate_ar_coefficients(ts[:, 0], [1, 3, 5, 7, 9, 11, 13, 15]))
+    features.extend(calculate_ar_coefficients(ts[:, 1], [1, 3, 5, 7, 9, 11, 13, 15]))
+    features.extend(calculate_ar_coefficients(ts[:, 2], [1, 3, 5, 7, 9, 11, 13, 15]))
+
     return np.array(features)
+
+def calculate_ar_coefficients(ts, lags):
+    """ Calculate AR model coefficients for 1d array """
+
+    try:
+        ts = np.matrix(ts).reshape((-1, 1))
+        y = ts[lags[-1] + 1:, 0]
+        X = np.matrix([1] * len(y)).reshape((-1, 1))
+        for lag in lags:
+            X = np.hstack((X, ts[lags[-1] + 1 - lag:-lag, 0]))
+
+        return np.linalg.inv(X.T * X) * (X.T * y)
+    except:
+        raise TooShortSignalException("Too short signal")
