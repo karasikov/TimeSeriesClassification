@@ -10,11 +10,16 @@ import pickle
 import numpy as np
 from sklearn import svm
 from Connection import Connection
+import sigproc
+import scipy.io as sio
+from datetime import datetime
 
 """ Activity Recognition server """
 
-CLASSIFICATION_DATA_FOLDER = (os.path.dirname(os.path.realpath(__file__)) +
-                                "/classification_data")
+CLASSIFICATION_DATA_DIR = (os.path.dirname(os.path.realpath(__file__)) +
+                                "/classification_data/")
+TS_DATA_DIR = (os.path.dirname(os.path.realpath(__file__)) +
+                                "/ts_data/")
 
 PREDICT_TAG = "!PREDICT"
 TRAIN_TAG = "!TRAIN"
@@ -22,7 +27,13 @@ EXIT_TAG = "!EXIT"
 
 MASTER_ACCOUNT = "" # for unauthorized users
 
-DELIMETER = "#$$##$$#" # don't change it!
+DELIMETER = "#$$##$$#" # don't change me!
+
+RETRAINING_DELAY = 5
+FREQUENCY = 20
+
+def logging(message):
+    sys.stderr.write(datetime.now().strftime("%Y-%m-%d %H:%M:%S, ") + message + "\n")
 
 class Dataset:
     """ Dataset class
@@ -36,33 +47,38 @@ class Dataset:
 class Classifier:
     """ Machine learning time-series classifier """
 
-    def __init__(self, path):
+    def __init__(self, classifiers_dir, ts_data_dir):
         """ Load training dataset and classifier """
 
-        self.PATH_TO_DUMP = path
+        self.classifiers_dir = classifiers_dir
+        self.ts_data_dir = ts_data_dir
 
         self.classifier = {}
         self.training_data = {}
+        self._load_classifier(MASTER_ACCOUNT)
+
+    def _load_classifier(self, account):
         try:
-            self.training_data[MASTER_ACCOUNT] = pickle.load(open(self.PATH_TO_DUMP +
-                                                                  "/" + MASTER_ACCOUNT +
-                                                                  "/training_data.pkl", "rb"))
+            self.training_data[account] = pickle.load(open(self.classifiers_dir +
+                                                           "/" + account +
+                                                           "/training_data.pkl", "rb"))
         except:
-            sys.stderr.write("ERROR: Dataset is empty...\n")
-            self.training_data[MASTER_ACCOUNT] = Dataset()
+            logging("Dataset for account " + account + " is empty...")
+            self.training_data[account] = Dataset()
         try:
-            self.classifier[MASTER_ACCOUNT] = pickle.load(open(self.PATH_TO_DUMP +
-                                                               "/" + MASTER_ACCOUNT +
-                                                               "/classifier.pkl", "rb"))
+            self.classifier[account] = pickle.load(open(self.classifiers_dir +
+                                                        "/" + account +
+                                                        "/classifier.pkl", "rb"))
         except:
-            sys.stderr.write("ERROR: No classifier found in the folder! New classifier initialization...\n")
-            self.classifier[MASTER_ACCOUNT] = None
+            logging("No classifier found for account " + account +
+                    ". New classifier initialization...")
+            self.classifier[account] = None
 
     def __del__(self):
-        # retrain classifier on exit
+        """ Retrain all classifiers in destructor """
+
         for account in self.classifier.keys():
             self._retrain_classifier(account)
-
 
     def handle(self, request):
         """ Handle request: prediction/training """
@@ -77,75 +93,103 @@ class Classifier:
             tag, account, label, ts_string = request.split(DELIMETER)
             self._train(account.upper(), ts_string, label.upper())
         else:
-            pass
+            logging("Unrecognized request was received")
 
     def _prepare_ts(self, ts_string):
-        """ extract time-series from string to numpy array """
+        """ Extract time-series from string to numpy array """
 
         ts = np.matrix(ts_string.replace("\n", ";").encode("utf-8"), np.float64)
-        time = np.array(ts[:, 0], np.uint64)
+        time = np.array(ts[:, 0], np.float64) / 1000 # ms to seconds
+        time = time - time[0]
         ts = np.array(ts[:, 1:])
+
+        time, ts = sigproc.transform_frequency(time, ts, FREQUENCY)
         return (time, ts)
+
+    def _ts_logging(self, time, ts, label, account):
+        """ Logging time-series """
+
+        try:
+            if len(self.ts_data_dir) > 0:
+                mat_file = self.ts_data_dir + "/" + account + "/dataset.mat"
+                new_ts = np.array((np.hstack((time, ts)).T, label),
+                                  dtype=[('ts', 'O'), ('label', 'O')])
+                try:
+                    dataset = sio.loadmat(mat_file)['dataset']
+                    dataset = np.vstack((dataset.T, new_ts)).T
+                except:
+                    dataset = new_ts
+
+                if not os.path.exists(os.path.dirname(mat_file)):
+                    os.makedirs(os.path.dirname(mat_file))
+
+                sio.savemat(mat_file, {'dataset': dataset})
+        except:
+            logging(traceback.format_exc())
 
     def _predict(self, account, ts_string):
         """ Predict class' label of the time-series """
 
-        if account not in self.classifier.keys() or self.classifier[account] is None:
-            return "Train classifier"
-        else:
+        try:
             time, ts = self._prepare_ts(ts_string)
-            features = self._get_features(np.array(ts))
+            self._ts_logging(time, ts, "?", account)
+            features = sigproc.get_features(np.array(ts))
+        except sigproc.TooShortSignalException as e:
+            return "Too short signal"
+        except:
+            logging(traceback.format_exc())
+            return "Bad signal"
 
-            #print features
+        if account not in self.classifier.keys():
+            self._load_classifier(account)
+
+        if self.classifier[account] is None:
+            return "Train classifier"
+
+        try:
             return self.classifier[account].predict(features)[0]
+        except:
+            return "Add samples"
 
     def _train(self, account, ts_string, label):
         """ Adding new observation and to the training set """
 
         time, ts = self._prepare_ts(ts_string)
-        features = self._get_features(ts)
+        self._ts_logging(time, ts, label, account)
+        features = sigproc.get_features(ts)
 
-        # Check whether this user new
         if account not in self.training_data.keys():
-            self.training_data[account] = Dataset()
-            self.classifier[account] = None
+            self._load_classifier(account)
 
         try:
             self.training_data[account].X = np.vstack([self.training_data[account].X, features])
             self.training_data[account].y.append(label)
         except:
-            self.training_data[account].X = features
+            self.training_data[account].X = np.array([features])
             self.training_data[account].y = [label]
-        if len(self.training_data[account].X) % 5 == 0:
+        if len(self.training_data[account].y) % RETRAINING_DELAY == 0:
             self._retrain_classifier(account)
 
     def _retrain_classifier(self, account):
         """ Fit classifier with stored training data """
 
-        sys.stderr.write("Classifier retraining...\n")
-        self.classifier[account] = svm.SVC(C=10, gamma=0.1)
-        self.classifier[account].fit(self.training_data[account].X, self.training_data[account].y)
-        sys.stderr.write("Ok\n")
+        try:
+            logging("Classifier retraining...")
+            self.classifier[account] = svm.SVC(C=10, gamma=0.1)
+            self.classifier[account].fit(self.training_data[account].X, self.training_data[account].y)
+            logging("Ok")
 
-        account_folder = self.PATH_TO_DUMP + "/" + account + "/"
-        if not os.path.exists(os.path.dirname(account_folder)):
-            os.makedirs(os.path.dirname(account_folder))
+            account_folder = self.classifiers_dir + "/" + account + "/"
+            if not os.path.exists(os.path.dirname(account_folder)):
+                os.makedirs(os.path.dirname(account_folder))
 
-        pickle.dump(self.classifier[account],
-                    open(account_folder + "/classifier.pkl", "wb"))
-        pickle.dump(self.training_data[account],
-                    open(account_folder + "/training_data.pkl", "wb"))
-        sys.stderr.write("Data was dumped for user {:s}\n".format(account))
-
-    def _get_features(self, ts):
-        """ This function defines feature-space (design matrix) """
-
-        features = []
-        features.extend(ts.mean(0))
-        features.extend(ts.std(0))
-        features.extend(np.abs(ts - ts.mean(0)).mean(0))
-        features.extend([((ts ** 2).sum(1) ** 0.5).mean()])
-        return np.array(features)
+            pickle.dump(self.classifier[account],
+                        open(account_folder + "/classifier.pkl", "wb"))
+            pickle.dump(self.training_data[account],
+                        open(account_folder + "/training_data.pkl", "wb"))
+            logging("Data was dumped for user {:s}".format(account))
+        except:
+            logging("Retraining failure:\n" + traceback.format_exc())
 
 class Server:
     """ Server which communicates with mobile devices and handles requests """
@@ -159,7 +203,7 @@ class Server:
         # Bind the socket to the port
         server_address = (host, port)
         self.sock.bind(server_address)
-        self.classifier = Classifier(CLASSIFICATION_DATA_FOLDER)
+        self.classifier = Classifier(CLASSIFICATION_DATA_DIR, TS_DATA_DIR)
 
     def run(self):
         """ Start listening """
@@ -168,17 +212,17 @@ class Server:
         self.sock.listen(1)
 
         while True:
-            sys.stderr.write('waiting for a connection...\n')
+            logging("waiting for a connection...")
             client_socket, client_address = self.sock.accept()
 
             # There server has new connection
             # and can interact with client through blocking TCP socket |client_socket|
-            print >> sys.stderr, 'connection from', client_address
+            logging("connection from " + str(client_address))
             try:
                 connection = Connection(client_socket)
                 received_string = connection.receive_string()
                 if received_string[:len(EXIT_TAG)].upper() == EXIT_TAG:
-                    print >> sys.stderr, "exit command was received, server will be halted"
+                    logging("exit command was received, server will be halted")
                     self.sock.close()
                     return
 
@@ -188,11 +232,11 @@ class Server:
                     # Send predicted class
                     connection.send_string(result)
             except:
-                print >> sys.stderr, "client ", client_address, " exception:"
-                print >> sys.stderr, traceback.format_exc()
+                logging("client " + str(client_address) + " exception:")
+                logging(traceback.format_exc())
             finally:
                 # Clean up the connection
-                print >> sys.stderr, "connection", client_address, "is being closed"
+                logging("connection " + str(client_address) + " is being closed")
                 client_socket.close()
 
 
