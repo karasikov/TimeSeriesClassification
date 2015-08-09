@@ -2,6 +2,8 @@ import socket
 import sys
 import struct
 
+MAX_STRING_SIZE = 10 ** 8
+
 class Connection:
     """ Class for communication through socket
         It guarantees correct transmission for TCP socket
@@ -22,7 +24,10 @@ class Connection:
 
         string_length = struct.unpack('!L', data)[0]
 
-        # Receive the data in small chunks and retransmit it
+        if string_length > MAX_STRING_SIZE:
+            raise IOError("Received string length longer than maximum allowed" +
+                            " (" + str(string_length) + " > " + str(MAX_STRING_SIZE) + ")")
+        # Receive data by small chunks and reconstruct the string
         received = []
         while string_length > 0:
             received.append(self.socket.recv(min(16, string_length)))
