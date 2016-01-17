@@ -1,3 +1,5 @@
-http://w17407.vdi.mipt.ru/
+http://activity.karasikov.com/
+
+or
 
 ./docs/html/index.html

@@ -1,13 +1,17 @@
-﻿#!/usr/bin/env python
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
+
+
+""" Signal processing procedures """
+
 
 import numpy as np
 
-""" Signal processing procedures """
 
 class TooShortSignalException(Exception):
     def __init__(self, *args, **kvargs):
         super(TooShortSignalException, self).__init__(*args, **kvargs)
+
 
 def binary_search(data, val):
     lo, hi = 0, len(data) - 1

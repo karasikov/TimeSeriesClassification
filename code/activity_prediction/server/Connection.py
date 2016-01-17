@@ -1,12 +1,21 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
+
+"""TCP Connection Interface"""
+
+
 import socket
 import sys
 import struct
 
+
 MAX_STRING_SIZE = 10 ** 8
+
 
 class Connection:
     """ Class for communication through socket
-        It guarantees correct transmission for TCP socket
+    It guarantees correct transmission for TCP socket
     """
 
     def __init__(self, socket):

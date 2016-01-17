@@ -7,15 +7,14 @@
 # Should-Start:
 # Default-Start:     2 3 4 5
 # Default-Stop:
-# Short-Description: Human activity prediction by server Mikhail Karasikov
+# Short-Description: Human activity prediction server by Mikhail Karasikov
 ### END INIT INFO
 
 DAEMON_NAME=activity_prediction
-DAEMON="/usr/bin/python"
 DAEMON_USER=user
 DIR="/home/$DAEMON_USER/activity_prediction/"
-PYTHON_SCRIPT=$DIR/server.py
-DAEMON_OPTS="35364"
+DAEMON=$DIR/activity_prediction_server.py
+DAEMON_OPTS="-P 35364"
 
 
 PIDFILE=/var/run/$DAEMON_NAME.pid
@@ -23,12 +22,13 @@ LOGFILE=$DIR/log
 
 do_start () {
   echo "Starting system $DAEMON_NAME daemon"
-  /sbin/start-stop-daemon --start --pidfile $PIDFILE --make-pidfile --user $DAEMON_USER --chuid $DAEMON_USER --startas $DAEMON $PYTHON_SCRIPT $DAEMON_OPTS 2>>$LOGFILE &
+  /sbin/start-stop-daemon --start --pidfile $PIDFILE --make-pidfile --user $DAEMON_USER --chuid $DAEMON_USER --startas $DAEMON -- start $DAEMON_OPTS 2>>"$LOGFILE" &
   echo $?
 }
+
 do_stop () {
   echo "Stopping system $DAEMON_NAME daemon"
-  python $DIR/stop_server.py $DAEMON_OPTS
+  $DAEMON stop $DAEMON_OPTS
   echo $?
   rm $PIDFILE
 }

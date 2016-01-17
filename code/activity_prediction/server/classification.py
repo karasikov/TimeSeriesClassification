@@ -1,33 +1,31 @@
-﻿#!/usr/bin/env python
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import socket
-import sys
+
+"""Time-Series Classification"""
+
+
 import os
+import sys
 import traceback
 import collections
 import pickle
 import numpy as np
 from sklearn import svm
-from Connection import Connection
-import sigproc
 import scipy.io as sio
 from datetime import datetime
+import ConfigParser
 
-""" Activity Recognition server """
+import sigproc
+from ftpuploader import ftp_upload
 
-CLASSIFICATION_DATA_DIR = (os.path.dirname(os.path.realpath(__file__)) +
-                                "/classification_data/")
-TS_DATA_DIR = (os.path.dirname(os.path.realpath(__file__)) +
-                                "/ts_data/")
 
-PREDICT_TAG = "!PREDICT"
-TRAIN_TAG = "!TRAIN"
-EXIT_TAG = "!EXIT"
+__author__ = "Mikhail Karasikov"
+__copyright__ = ""
+__email__ = "karasikov@phystech.edu"
+
 
 MASTER_ACCOUNT = "" # for unauthorized users
-
-DELIMETER = "#$$##$$#" # don't change me!
 
 RETRAINING_DELAY = 5
 FREQUENCY = 20
@@ -47,8 +45,10 @@ class Dataset:
 class Classifier:
     """ Machine learning time-series classifier """
 
-    def __init__(self, classifiers_dir, ts_data_dir):
+    def __init__(self, classifiers_dir, ts_data_dir, config_file):
         """ Load training dataset and classifier """
+
+        self.config_file = config_file
 
         self.classifiers_dir = classifiers_dir
         self.ts_data_dir = ts_data_dir
@@ -63,15 +63,15 @@ class Classifier:
                                                            "/" + account +
                                                            "/training_data.pkl", "rb"))
         except:
-            logging("Dataset for account " + account + " is empty...")
+            logging("Dataset for account <%s> is empty" % account)
             self.training_data[account] = Dataset()
         try:
             self.classifier[account] = pickle.load(open(self.classifiers_dir +
                                                         "/" + account +
                                                         "/classifier.pkl", "rb"))
         except:
-            logging("No classifier found for account " + account +
-                    ". New classifier initialization...")
+            logging("No classifier was found for account <%s>; "
+                    "new classifier was initialized" % account)
             self.classifier[account] = None
 
     def __del__(self):
@@ -79,21 +79,6 @@ class Classifier:
 
         for account in self.classifier.keys():
             self._retrain_classifier(account)
-
-    def handle(self, request):
-        """ Handle request: prediction/training """
-
-        #print request
-        if request[:len(PREDICT_TAG)].upper() == PREDICT_TAG:
-            # prediction case
-            tag, account, ts_string = request.split(DELIMETER)
-            return self._predict(account.upper(), ts_string)
-        elif request[:len(TRAIN_TAG)].upper() == TRAIN_TAG:
-            # training case
-            tag, account, label, ts_string = request.split(DELIMETER)
-            self._train(account.upper(), ts_string, label.upper())
-        else:
-            logging("Unrecognized request was received")
 
     def _prepare_ts(self, ts_string):
         """ Extract time-series from string to numpy array """
@@ -123,11 +108,20 @@ class Classifier:
                 if not os.path.exists(os.path.dirname(mat_file)):
                     os.makedirs(os.path.dirname(mat_file))
 
-                sio.savemat(mat_file, {'dataset': dataset})
+                sio.savemat(mat_file, {'dataset': dataset}, do_compression=True)
+
+                try:
+                    config = ConfigParser.ConfigParser()
+                    config.read(self.config_file)
+                    ftp_upload(self.ts_data_dir + "/" + account, account, config)
+                    logging("Data was uploaded to FTP server")
+                except:
+                    logging("Uploading to FTP server error:\n" + traceback.format_exc())
+
         except:
             logging(traceback.format_exc())
 
-    def _predict(self, account, ts_string):
+    def predict(self, account, ts_string):
         """ Predict class' label of the time-series """
 
         try:
@@ -151,7 +145,7 @@ class Classifier:
         except:
             return "Add samples"
 
-    def _train(self, account, ts_string, label):
+    def train(self, account, ts_string, label):
         """ Adding new observation and to the training set """
 
         time, ts = self._prepare_ts(ts_string)
@@ -175,6 +169,11 @@ class Classifier:
 
         try:
             logging("Classifier retraining...")
+
+            if len(self.training_data[account].y) == 0:
+                logging("Empty dataset for user <%s>" % account)
+                return
+
             self.classifier[account] = svm.SVC(C=10, gamma=0.1)
             self.classifier[account].fit(self.training_data[account].X, self.training_data[account].y)
             logging("Ok")
@@ -187,66 +186,6 @@ class Classifier:
                         open(account_folder + "/classifier.pkl", "wb"))
             pickle.dump(self.training_data[account],
                         open(account_folder + "/training_data.pkl", "wb"))
-            logging("Data was dumped for user {:s}".format(account))
+            logging("Data was dumped for user <%s>" % account)
         except:
             logging("Retraining failure:\n" + traceback.format_exc())
-
-class Server:
-    """ Server which communicates with mobile devices and handles requests """
-
-    def __init__(self, host, port):
-        """ Create listening socket and initialize classifier """
-
-        # Create a TCP/IP socket
-        self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-
-        # Bind the socket to the port
-        server_address = (host, port)
-        self.sock.bind(server_address)
-        self.classifier = Classifier(CLASSIFICATION_DATA_DIR, TS_DATA_DIR)
-
-    def run(self):
-        """ Start listening """
-
-        # Listen for incoming connections
-        self.sock.listen(1)
-
-        while True:
-            logging("waiting for a connection...")
-            client_socket, client_address = self.sock.accept()
-
-            # There server has new connection
-            # and can interact with client through blocking TCP socket |client_socket|
-            logging("connection from " + str(client_address))
-            try:
-                connection = Connection(client_socket)
-                received_string = connection.receive_string()
-                if received_string[:len(EXIT_TAG)].upper() == EXIT_TAG:
-                    logging("exit command was received, server will be halted")
-                    self.sock.close()
-                    return
-
-                # Predict class or add new observation to training set
-                result = self.classifier.handle(received_string)
-                if result is not None:
-                    # Send predicted class
-                    connection.send_string(result)
-            except:
-                logging("client " + str(client_address) + " exception:")
-                logging(traceback.format_exc())
-            finally:
-                # Clean up the connection
-                logging("connection " + str(client_address) + " is being closed")
-                client_socket.close()
-
-
-def main():
-    if len(sys.argv) != 2:
-        print >> sys.stderr, "Usage: {:s} <port>".format(sys.argv[0])
-        exit(1)
-
-    server = Server("0.0.0.0", int(sys.argv[1]))
-    server.run()
-
-
-main()
