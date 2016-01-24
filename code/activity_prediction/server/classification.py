@@ -97,17 +97,21 @@ class Classifier:
         try:
             if len(self.ts_data_dir) > 0:
                 mat_file = self.ts_data_dir + "/" + account + "/dataset.mat"
-                new_ts = np.array((np.hstack((time, ts)).T, label),
-                                  dtype=[('ts', 'O'), ('label', 'O')])
+
+                new_ts = np.hstack((time, ts))
+                new_observation = np.array((new_ts.T, label),
+                                           dtype=[('ts', 'O'), ('label', 'O')])
                 try:
                     dataset = sio.loadmat(mat_file)['dataset']
-                    dataset = np.vstack((dataset.T, new_ts)).T
+                    dataset = np.vstack((dataset.T, new_observation)).T
                 except:
-                    dataset = new_ts
+                    dataset = new_observation
 
                 if not os.path.exists(os.path.dirname(mat_file)):
                     os.makedirs(os.path.dirname(mat_file))
 
+                np.savetxt(self.ts_data_dir + "/" + account + "/last_ts.csv",
+                           new_ts, delimiter=",", comments="", header="t,x,y,z")
                 sio.savemat(mat_file, {'dataset': dataset}, do_compression=True)
 
                 try:

@@ -15,18 +15,22 @@ __copyright__ = ""
 __email__ = "karasikov@phystech.edu"
 
 
-def ftp_upload(path, destination, config, ftp=None):
-    if ftp is None:
-        ftp = ftplib.FTP(config.get('FTPServer', 'host'),
-                         config.get('FTPServer', 'user'),
-                         config.get('FTPServer', 'passwd'))
-        ftp.cwd(config.get('FTPServer', 'path'))
-        try:
-            ftp.mkd(destination)
-        except:
-            pass
-        ftp.cwd(destination)
+def ftp_upload(path, destination, config):
+    ftp = ftplib.FTP(config.get('FTPServer', 'host'),
+                     config.get('FTPServer', 'user'),
+                     config.get('FTPServer', 'passwd'))
+    ftp.cwd(config.get('FTPServer', 'path'))
+    try:
+        ftp.mkd(destination)
+    except:
+        pass
+    ftp.cwd(destination)
 
+    ftp_upload_recursive(path, destination, config, ftp)
+    ftp.close()
+
+
+def ftp_upload_recursive(path, destination, config, ftp):
     files = os.listdir(path)
 
     for f in files:
@@ -40,5 +44,5 @@ def ftp_upload(path, destination, config, ftp=None):
             except:
                 pass
             ftp.cwd(f)
-            ftp_upload(path + '/' + f, None, None, ftp)
+            ftp_upload_recursive(path + '/' + f, None, None, ftp)
             ftp.cwd('..')
