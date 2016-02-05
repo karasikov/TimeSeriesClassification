@@ -18,7 +18,8 @@ __email__ = "karasikov@phystech.edu"
 def ftp_upload(path, destination, config):
     ftp = ftplib.FTP(config.get('FTPServer', 'host'),
                      config.get('FTPServer', 'user'),
-                     config.get('FTPServer', 'passwd'))
+                     config.get('FTPServer', 'passwd'),
+                     timeout=5)
     ftp.cwd(config.get('FTPServer', 'path'))
     try:
         ftp.mkd(destination)
