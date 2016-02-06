@@ -1,1 +1,1 @@
-get_data.m for getting data
+To get the data run get_data.m
