@@ -1,0 +1,1 @@
+https://nbviewer.jupyter.org/url/svn.code.sf.net/p/mlalgorithms/code/Group174/Karasikov2015TimeSeriesClassification/code/python/time_series.ipynb
