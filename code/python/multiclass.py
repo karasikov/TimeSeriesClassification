@@ -15,7 +15,7 @@ __copyright__ = ""
 __email__ = "karasikov@phystech.edu"
 
 
-def cross_val_score(estimator, X, y, cv):
+def cross_val_score(estimator, X, y, cv, fig_name=None):
     """Performs sklearn cross_val_score and returns mean confusion matrix.
     Parameters
     ----------
@@ -47,9 +47,10 @@ def cross_val_score(estimator, X, y, cv):
     """
 
     scores = []
+    labels = list(set(y))
 
     def scoring(estimator, X, y):
-        confusion_matrix = metrics.confusion_matrix(y, estimator.predict(X))
+        confusion_matrix = metrics.confusion_matrix(y, estimator.predict(X), labels)
         scores.append(confusion_matrix)
         print(end=".", flush=True)
         return np.diag(confusion_matrix).sum() / confusion_matrix.sum()
@@ -60,11 +61,13 @@ def cross_val_score(estimator, X, y, cv):
     print("\nMean accuracy:", np.diag(confusion_mean).sum() / confusion_mean.sum())
     print("Confusion matrix:\n", (confusion_mean /
                                   confusion_mean.sum(1).reshape(-1, 1)).round(2))
+    multiclass_recall_plot(confusion_mean, fig_name, labels)
     return confusion_mean
 
 
-def multiclass_recall_plot(confusion_matrix, fig_name=None):
-    labels = np.arange(confusion_matrix.shape[0]) + 1
+def multiclass_recall_plot(confusion_matrix, fig_name=None, labels=None):
+    if labels is None:
+        labels = np.arange(confusion_matrix.shape[0]) + 1
     width = 0.9
 
     num_objects = confusion_matrix.sum(1)
@@ -103,14 +106,44 @@ def multiclass_recall_plot(confusion_matrix, fig_name=None):
     plt.rc('font', family='serif', serif='Times New Roman')
     plt.rc('pgf', texsystem='pdflatex')
 
-    max_height = max(map(lambda rect: rect.get_height(), rects))
+    max_height = max([rect.get_height() for rect in rects])
 
     for i, rect in enumerate(rects):
         plt.text(rect.get_x() + rect.get_width()/2., rect.get_height(),
                  '${:.1f}\%$'.format(sensitivity[i] * 100),
-                 ha='center', va='bottom', size=19 * 6 / len(rects))
+                 ha='center', va='bottom', size=min(20, 25 * 6 / len(rects)))
 
     plt.tight_layout()
     if fig_name is not None:
         plt.savefig(fig_name)
+    plt.show()
+
+
+def plot_grid_search_scores(grid_search_cv, vmin=None, vmax=None):
+    """Draw heatmap of the validation accuracy as a function of x and y
+    
+    Keyword arguments:
+        grid_search ... sklearn.grid_search.GridSearchCV object, fitted estimator
+    """
+
+    try:
+        y_name, x_name = grid_search_cv.grid_scores_[0][0].keys()
+    except:
+        raise Exception('Number of parameters must be 2')
+
+    x_range = grid_search_cv.param_grid[x_name]
+    y_range = grid_search_cv.param_grid[y_name]
+    scores = [x[1] for x in grid_search_cv.grid_scores_]
+    scores = np.array(scores).reshape(len(y_range), len(x_range))
+
+    plt.figure(figsize=(8, 6))
+    plt.subplots_adjust(left=.2, right=0.95, bottom=0.15, top=0.95)
+    plt.imshow(scores, interpolation='nearest', cmap=plt.cm.hot,
+               norm=plt.Normalize(vmin=vmin, vmax=vmax))
+    plt.xlabel(x_name)
+    plt.ylabel(y_name)
+    plt.colorbar()
+    plt.xticks(np.arange(len(x_range)), x_range, rotation=45)
+    plt.yticks(np.arange(len(y_range)), y_range)
+    plt.title('Validation accuracy')
     plt.show()
