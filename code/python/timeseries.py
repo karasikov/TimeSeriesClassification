@@ -27,7 +27,6 @@ class TSDataset(object):
     def __init__(self):
         self.__dataset = np.array([[]], dtype=[('ts', 'O'), ('label', 'O')])
 
-
     def __getattr__(self, attr):
         if attr == 'ts':
             return self.__dataset['ts'].ravel()
@@ -36,33 +35,30 @@ class TSDataset(object):
 
         raise AttributeError("'TSDataset' object has no attribute '%s'" % attr)
 
-
     def __getitem__(self, i):
         return (self.ts[i], self.label[i])
-
 
     def __len__(self):
         return self.ts.size
 
-
-    def load_from_mat(self, mat_file):
-        self.__dataset = sio.loadmat(mat_file)['dataset']
-
+    @classmethod
+    def load_from_mat(cls, mat_file):
+        dataset = cls()
+        dataset.__dataset = sio.loadmat(mat_file)['dataset']
+        return dataset
 
     def save_to_mat(self, mat_file, do_compression=True):
         if not os.path.exists(os.path.dirname(mat_file)):
             os.makedirs(os.path.dirname(mat_file))
 
         sio.savemat(mat_file, {'dataset': self.__dataset},
-                              do_compression=do_compression)
-
+                    do_compression=do_compression)
 
     def add_observation(self, ts, label):
         self.__dataset = np.hstack((
             self.__dataset,
             np.array((ts, label), dtype=[('ts', 'O'), ('label', 'O')], ndmin=2)
         ))
-
 
     def extend(self, ts_list, label_list):
         for ts, label in zip(ts_list, label_list):
@@ -93,7 +89,8 @@ def transform_frequency(time, ts, freq, kind='linear'):
         freq ... frequency
         kind ... interpolation method: 'linear', 'quadratic', 'cubic'
     """
-    t = np.linspace(time[0], time[-1], (time[-1] - time[0]) * freq + 1, endpoint=True)
+    t = np.linspace(time[0], time[-1], (time[-1] - time[0]) * freq + 1,
+                    endpoint=True)
     ts_transformed = []
     for ts_axis in np.atleast_2d(ts):
         interpolation = interp1d(time, ts_axis.ravel(), kind)
@@ -102,5 +99,6 @@ def transform_frequency(time, ts, freq, kind='linear'):
 
 
 def smooth(ts, window_size):
-    ts = ts[:, :ts.shape[1] - (ts.shape[1] % window_size)]
-    return ts.reshape(ts.shape[0], -1, window_size).mean(2)
+    ts_2d = np.atleast_2d(ts).copy()
+    ts_2d = ts_2d[:, :ts_2d.shape[1] - (ts_2d.shape[1] % window_size)]
+    return ts_2d.reshape(ts_2d.shape[0], -1, window_size).mean(2)
