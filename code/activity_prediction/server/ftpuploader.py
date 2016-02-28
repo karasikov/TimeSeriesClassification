@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
 
@@ -7,7 +7,6 @@
 
 import os
 import ftplib
-import ConfigParser
 
 
 __author__ = "Mikhail Karasikov"
@@ -15,7 +14,7 @@ __copyright__ = ""
 __email__ = "karasikov@phystech.edu"
 
 
-def ftp_upload(path, destination, config):
+def ftp_upload_dir(path, destination, config):
     ftp = ftplib.FTP(config.get('FTPServer', 'host'),
                      config.get('FTPServer', 'user'),
                      config.get('FTPServer', 'passwd'),

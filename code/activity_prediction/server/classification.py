@@ -11,13 +11,19 @@ import traceback
 import collections
 import pickle
 import numpy as np
-from sklearn import svm
 import scipy.io as sio
 from datetime import datetime
-import ConfigParser
+from contextlib import redirect_stdout
 
-import sigproc
-from ftpuploader import ftp_upload
+from sklearn import svm
+import sklearn.preprocessing
+from sklearn.grid_search import GridSearchCV
+from sklearn import svm, cross_validation
+from sklearn.pipeline import Pipeline
+
+import timeseries
+import feature_extraction
+import multiclass
 
 
 __author__ = "Mikhail Karasikov"
@@ -25,115 +31,74 @@ __copyright__ = ""
 __email__ = "karasikov@phystech.edu"
 
 
-MASTER_ACCOUNT = "" # for unauthorized users
+MASTER_ACCOUNT = ""  # for unauthorized users
 
-RETRAINING_DELAY = 5
-FREQUENCY = 20
+TS_FREQUENCY = 20
+
 
 def logging(message):
     sys.stderr.write(datetime.now().strftime("%Y-%m-%d %H:%M:%S, ") + message + "\n")
 
-class Dataset:
-    """ Dataset class
-        fields: X --- design-matrix
-                y --- classes' labels
-    """
-    def __init__(self):
-        self.X = np.array([])
-        self.y = []
 
 class Classifier:
     """ Machine learning time-series classifier """
 
-    def __init__(self, classifiers_dir, ts_data_dir, config_file):
+    def __init__(self, classifiers_dir, ts_data_dir, retraining_delay, upload_data):
         """ Load training dataset and classifier """
 
-        self.config_file = config_file
+        self.upload_data = upload_data
 
         self.classifiers_dir = classifiers_dir
         self.ts_data_dir = ts_data_dir
+        self.retraining_delay = retraining_delay
 
         self.classifier = {}
-        self.training_data = {}
         self._load_classifier(MASTER_ACCOUNT)
 
     def _load_classifier(self, account):
         try:
-            self.training_data[account] = pickle.load(open(self.classifiers_dir +
-                                                           "/" + account +
-                                                           "/training_data.pkl", "rb"))
-        except:
-            logging("Dataset for account <%s> is empty" % account)
-            self.training_data[account] = Dataset()
-        try:
-            self.classifier[account] = pickle.load(open(self.classifiers_dir +
-                                                        "/" + account +
-                                                        "/classifier.pkl", "rb"))
+            with open(self.classifiers_dir + "/" +
+                      account + "/classifier.pkl", "rb") as file:
+                self.classifier[account] = pickle.load(file)
         except:
             logging("No classifier was found for account <%s>; "
                     "new classifier was initialized" % account)
             self.classifier[account] = None
 
-    def __del__(self):
-        """ Retrain all classifiers in destructor """
-
-        for account in self.classifier.keys():
-            self._retrain_classifier(account)
-
-    def _prepare_ts(self, ts_string):
-        """ Extract time-series from string to numpy array """
-
-        ts = np.matrix(ts_string.replace("\n", ";").encode("utf-8"), np.float64)
-        time = np.array(ts[:, 0], np.float64) / 1000 # ms to seconds
-        time = time - time[0]
-        ts = np.array(ts[:, 1:])
-
-        time, ts = sigproc.transform_frequency(time, ts, FREQUENCY)
-        return (time, ts)
-
-    def _ts_logging(self, time, ts, label, account):
-        """ Logging time-series """
+    def _save_ts(self, ts, label, account):
+        """Save new time-series"""
 
         try:
-            if len(self.ts_data_dir) > 0:
-                mat_file = self.ts_data_dir + "/" + account + "/dataset.mat"
+            data_path = self.ts_data_dir + "/" + account
 
-                new_ts = np.hstack((time, ts))
-                new_observation = np.array((new_ts.T, label),
-                                           dtype=[('ts', 'O'), ('label', 'O')])
-                try:
-                    dataset = sio.loadmat(mat_file)['dataset']
-                    dataset = np.vstack((dataset.T, new_observation)).T
-                except:
-                    dataset = new_observation
+            try:
+                dataset = timeseries.TSDataset.load_from_mat(data_path + "/dataset.mat")
+            except:
+                dataset = timeseries.TSDataset()
+            dataset.add_observation(ts, label)
 
-                if not os.path.exists(os.path.dirname(mat_file)):
-                    os.makedirs(os.path.dirname(mat_file))
+            if not os.path.exists(data_path):
+                os.makedirs(data_path)
 
-                np.savetxt(self.ts_data_dir + "/" + account + "/last_ts.csv",
-                           new_ts, delimiter=",", comments="", header="t,x,y,z")
-                sio.savemat(mat_file, {'dataset': dataset}, do_compression=True)
+            np.savetxt(data_path + "/last_ts.csv", ts.T,
+                       delimiter=",", comments="", header="t,x,y,z")
+            dataset.save_to_mat(data_path + "/dataset.mat", do_compression=True)
 
-                try:
-                    config = ConfigParser.ConfigParser()
-                    config.read(self.config_file)
-                    ftp_upload(self.ts_data_dir + "/" + account, account, config)
-                    logging("Data was uploaded to FTP server")
-                except:
-                    logging("Uploading to FTP server error:\n" + traceback.format_exc())
+            self.upload_data(data_path, account)
 
+            return len(dataset.label) * (len(set(dataset.label) - {"?"}) > 1)
         except:
             logging(traceback.format_exc())
+            return -1
 
-    def predict(self, account, ts_string):
+    def predict(self, account, ts):
         """ Predict class' label of the time-series """
 
+        self._save_ts(ts, "?", account)
         try:
-            time, ts = self._prepare_ts(ts_string)
-            self._ts_logging(time, ts, "?", account)
-            features = sigproc.get_features(np.array(ts))
-        except sigproc.TooShortSignalException as e:
-            return "Too short signal"
+            features = get_features([ts])
+        except feature_extraction.SignalLengthException as e:
+            return str(e)
         except:
             logging(traceback.format_exc())
             return "Bad signal"
@@ -149,23 +114,11 @@ class Classifier:
         except:
             return "Add samples"
 
-    def train(self, account, ts_string, label):
+    def train(self, account, ts, label):
         """ Adding new observation and to the training set """
 
-        time, ts = self._prepare_ts(ts_string)
-        self._ts_logging(time, ts, label, account)
-        features = sigproc.get_features(ts)
-
-        if account not in self.training_data.keys():
-            self._load_classifier(account)
-
-        try:
-            self.training_data[account].X = np.vstack([self.training_data[account].X, features])
-            self.training_data[account].y.append(label)
-        except:
-            self.training_data[account].X = np.array([features])
-            self.training_data[account].y = [label]
-        if len(self.training_data[account].y) % RETRAINING_DELAY == 0:
+        training_set_size = self._save_ts(ts, label, account)
+        if training_set_size > 0 and training_set_size % self.retraining_delay == 0:
             self._retrain_classifier(account)
 
     def _retrain_classifier(self, account):
@@ -174,22 +127,95 @@ class Classifier:
         try:
             logging("Classifier retraining...")
 
-            if len(self.training_data[account].y) == 0:
+            try:
+                dataset = timeseries.TSDataset.load_from_mat(self.ts_data_dir + "/" + account + "/dataset.mat")
+            except:
                 logging("Empty dataset for user <%s>" % account)
                 return
 
-            self.classifier[account] = svm.SVC(C=10, gamma=0.1)
-            self.classifier[account].fit(self.training_data[account].X, self.training_data[account].y)
+            observations = dataset.label != "?"
+            X = get_features(dataset.ts[observations])
+            scaler = sklearn.preprocessing.MinMaxScaler((-1, 1))
+            X_normalized = scaler.fit_transform(X)
+            y = dataset.label[observations]
+
+            data_path = self.ts_data_dir + "/" + account + "/"
+
+            with open(data_path + 'retraining_out.txt', 'w') as f:
+                with redirect_stdout(f):
+                    try:
+                        grid_search_cv = GridSearchCV(
+                            svm.SVC(), {
+                                'gamma': np.logspace(-4, 0, 10),
+                                'C': np.logspace(0, 3, 10),
+                            },
+                            scoring=None,
+                            n_jobs=1,
+                            refit=False,
+                            cv=cross_validation.StratifiedKFold(
+                                y, 5, shuffle=True, random_state=17
+                            ),
+                            verbose=1,
+                            error_score='raise'
+                        ).fit(X_normalized, y)
+
+                        multiclass.plot_grid_search_scores(
+                            grid_search_cv,
+                            fig_name=data_path + "cross_validation.jpg",
+                            show_plot=False
+                        )
+
+                        confusion_mean = multiclass.cross_val_score(
+                            svm.SVC(**grid_search_cv.best_params_),
+                            X_normalized, y,
+                            cross_validation.StratifiedKFold(
+                                y, 10, shuffle=True, random_state=18
+                            ),
+                            fig_name=data_path + "classification_accuracy.jpg",
+                            show_plot=False
+                        )
+                    except Exception as e:
+                        logging("Fitting classifier failure: " + str(e))
+                        return
+
+            self.classifier[account] = Pipeline([
+                ('scaler', scaler),
+                ('svc', svm.SVC(**grid_search_cv.best_params_))
+            ])
+            self.classifier[account].fit(X, y)
+
             logging("Ok")
 
             account_folder = self.classifiers_dir + "/" + account + "/"
-            if not os.path.exists(os.path.dirname(account_folder)):
-                os.makedirs(os.path.dirname(account_folder))
+            if not os.path.exists(account_folder):
+                os.makedirs(account_folder)
 
             pickle.dump(self.classifier[account],
                         open(account_folder + "/classifier.pkl", "wb"))
-            pickle.dump(self.training_data[account],
-                        open(account_folder + "/training_data.pkl", "wb"))
-            logging("Data was dumped for user <%s>" % account)
+            logging("Classifier was dumped for user <%s>" % account)
         except:
             logging("Retraining failure:\n" + traceback.format_exc())
+
+
+def get_features(ts_dataset):
+    ts_smoothed = [
+        timeseries.transform_frequency(ts[0], ts[1:], TS_FREQUENCY, kind='linear')[1]
+        for ts in ts_dataset
+    ]
+
+    def histogram(ts):
+        return np.histogram(ts, density=True, bins=10)[0] * (ts.max() - ts.min()) / 10
+
+    X = timeseries.ExtractFeatures(ts_smoothed,
+        lambda ts: ts.mean(1),
+        lambda ts: ts.std(1),
+        lambda ts: np.abs(ts - ts.mean(1).reshape(-1, 1)).mean(1),
+        lambda ts: np.sqrt((ts ** 2).sum(0)).mean(),
+        lambda ts: histogram(ts[0]),
+        lambda ts: histogram(ts[1]),
+        lambda ts: histogram(ts[2]),
+        lambda ts: feature_extraction.ar_parameters(ts, np.arange(1, 5)),
+        lambda ts: feature_extraction.dft_features(np.sqrt((ts[:3] ** 2).sum(0)), 5)[1:]
+    )
+
+    return X

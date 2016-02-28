@@ -23,11 +23,11 @@ class Connection:
 
     def send_string(self, string):
         string_length = len(string)
-        self.socket.send(struct.pack('!L', string_length))
-        self.socket.sendall(string)
+        self.socket.sendall(struct.pack('!L', string_length) +
+                            string.encode('utf-8'))
 
     def receive_string(self):
-        data = ''
+        data = b""
         while len(data) < 4:
             data += self.socket.recv(4 - len(data))
 
@@ -42,4 +42,4 @@ class Connection:
             received.append(self.socket.recv(min(16, string_length)))
             string_length -= len(received[-1])
 
-        return "".join(received).decode("utf-8")
+        return b"".join(received).decode("utf-8")
