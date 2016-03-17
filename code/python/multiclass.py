@@ -78,9 +78,9 @@ def multiclass_recall_plot(confusion_matrix, fig_name=None, labels=None, show_pl
     num_objects = confusion_matrix.sum(1)
     sensitivity = np.diag(confusion_matrix) / num_objects
 
-    x = np.arange(len(labels))
+    x = np.arange(len(labels)) + (1 - width) / 2
 
-    fig = plt.figure(figsize=(8, 6))
+    fig = plt.figure(figsize=(7, 5))
     ax = fig.add_subplot(111)
 
     rects = ax.bar(x, num_objects, width=width, color='#0000FF')
@@ -99,7 +99,7 @@ def multiclass_recall_plot(confusion_matrix, fig_name=None, labels=None, show_pl
     plt.xlabel('Class labels', size=20)
     plt.ylabel('Objects number', size=20)
     plt.title('Mean Accuracy: ${:.4f}$'.format(np.diag(confusion_matrix).sum() /
-                                          num_objects.sum()),
+                                               num_objects.sum()),
               size=22)
     plt.ylim([0, max(num_objects) * 1.07])
 
@@ -172,3 +172,22 @@ def plot_grid_search_scores(grid_search_cv, vmin=None, vmax=None,
     if not show_plot:
         plt.close(fig)
     plt.show()
+
+
+def confusion_latex(confusion_matrix):
+    confusion = confusion_matrix / confusion_matrix.sum(1).reshape(-1, 1)
+    num_classes = confusion.shape[0]
+    classes = np.arange(1, num_classes + 1)
+    latex_table = (
+        '\\begin{tabular}{|' + 'c|' * (2 + num_classes) + '}\n' +
+        '  \\cline{3-%d}\n' % (2 + num_classes) +
+        '  \\multicolumn{2}{c|}{} & \\multicolumn{%d}{c|}{Predicted class} \\\\ \\cline{3-%d}\n' % (num_classes, 2 + num_classes) +
+        '  \\multicolumn{2}{c|}{} & ' + ' & '.join([('$%d$' % c) for c in classes]) + '\\\\ \\cline{1-%d}\n' % (2 + num_classes) +
+        '  \\multirow{%d}{*}{\\begin{sideways}Actual class\\end{sideways}}\n' % num_classes
+    )
+
+    for i in range(0, num_classes - 1):
+        latex_table += '  & $%d$' % classes[i] + ''.join([(' & $%.2f$' % x) for x in confusion[i]]) + '\\\\ \\cline{2-%d}\n' % (2 + num_classes)
+
+    latex_table += '  & $%d$' % classes[-1] + ''.join([(' & $%.2f$' % x) for x in confusion[-1]]) + '\\\\ \\cline{1-%d}\n\\end{tabular}\n' % (2 + num_classes)
+    print(latex_table)
