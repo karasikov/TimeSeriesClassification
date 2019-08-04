@@ -1,5 +1,5 @@
-<http://activity.karasikov.com/>
+<http://www.karasikov.com/activity>
 
 or
 
-./site/www/index.html
+./docs/site/www/index.html
